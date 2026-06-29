@@ -1,7 +1,7 @@
 const http = require('http');
-const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 const PORT = process.env.PORT || 3000;
 const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ODMwNjI0M2RhNGVjNjEwMmFmM2IwODZlZDY1ZTc3OCIsIm5iZiI6MTc4Mjc0MzQ4Ni45NzEsInN1YiI6IjZhNDI4MWJlN2Q0ZDJkNGI1OGY3OTI3NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.j2W2F4ZWqv4mtun4S-A_ofuC0Fp-MBwtzCwcQj88Ax4';
@@ -19,33 +19,11 @@ let watchLinks = {};
 try {
   const source = JSON.parse(fs.readFileSync('movies-source.json', 'utf8'));
   source.forEach(m => { watchLinks[m.tmdb_id] = m.watch_link; });
-} catch (e) {}
+} catch {}
 
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled rejection:', err.message);
 });
-
-function httpsGet(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(url);
-    const opts = {
-      hostname: u.hostname,
-      path: u.pathname + u.search,
-      headers: options.headers || {},
-      rejectUnauthorized: false
-    };
-    const req = https.get(opts, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve({ status: res.statusCode, data }));
-    });
-    req.on('error', reject);
-    if (options.timeout) {
-      req.setTimeout(options.timeout, () => { req.destroy(); reject(new Error('timeout')); });
-    }
-    req.end();
-  });
-}
 
 function tmdbFetch(apiPath) {
   return new Promise((resolve, reject) => {
@@ -99,11 +77,6 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') {
       res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': '*' });
       res.end();
-      return;
-    }
-
-    if (p === '/api/health') {
-      sendJson(res, { status: 'ok', time: Date.now() });
       return;
     }
 
@@ -176,26 +149,34 @@ const server = http.createServer(async (req, res) => {
         const mediaType = url.searchParams.get('type') || 'movie';
         if (!imdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
 
-        const [imdbRes, apiRes] = await Promise.all([
-          httpsGet(`https://imdb.su/title/${imdbId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000 }),
-          httpsGet(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' }, timeout: 8000
-          })
-        ]);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
-        let embedUrl = '';
-        if (imdbRes.status === 200) {
-          const match = imdbRes.data.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
-          if (match) embedUrl = match[1];
-        }
-
-        let ok = false;
         try {
-          const apiData = JSON.parse(apiRes.data);
-          ok = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
-        } catch (e) {}
+          const [imdbRes, apiRes] = await Promise.all([
+            fetch(`https://imdb.su/title/${imdbId}/`, {
+              headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal
+            }),
+            fetch(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
+              headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' }, signal: controller.signal
+            })
+          ]);
 
-        sendJson(res, { ok, embed_url: embedUrl });
+          clearTimeout(timeout);
+
+          let embedUrl = '';
+          if (imdbRes.status === 200) {
+            const html = await imdbRes.text();
+            const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
+            if (match) embedUrl = match[1];
+          }
+          const apiData = await apiRes.json();
+          const ok = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
+          sendJson(res, { ok: !!ok, embed_url: embedUrl });
+        } catch (e) {
+          clearTimeout(timeout);
+          sendJson(res, { ok: false, embed_url: '' });
+        }
       } catch (e) {
         sendJson(res, { ok: false, embed_url: '' });
       }

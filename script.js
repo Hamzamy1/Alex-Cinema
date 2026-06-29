@@ -62,7 +62,7 @@ async function loadMovies() {
     updatePagination();
   } catch (err) {
     console.error(err);
-    if (grid) grid.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i><h3>حدث خطأ</h3><p style="direction:ltr;font-size:12px;color:#e50914;word-break:break-all;">' + (err.message || err) + '</p><p>تأكد من تشغيل السيرفر</p></div>';
+    if (grid) grid.innerHTML = '<div class="no-results"><i class="fas fa-exclamation-triangle"></i><h3>حدث خطأ</h3><p>تأكد من تشغيل السيرفر</p></div>';
   } finally {
     if (loading) loading.style.display = 'none';
   }
