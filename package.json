@@ -1,0 +1,9 @@
+{
+  "name": "alex-cinema",
+  "version": "1.0.0",
+  "description": "Alex Cinema - TMDB streaming site",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

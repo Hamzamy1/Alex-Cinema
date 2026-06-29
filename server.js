@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ODMwNjI0M2RhNGVjNjEwMmFmM2IwODZlZDY1ZTc3OCIsIm5iZiI6MTc4Mjc0MzQ4Ni45NzEsInN1YiI6IjZhNDI4MWJlN2Q0ZDJkNGI1OGY3OTI3NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.j2W2F4ZWqv4mtun4S-A_ofuC0Fp-MBwtzCwcQj88Ax4';
 
 const GENRE_MAP = {
@@ -19,7 +19,11 @@ let watchLinks = {};
 try {
   const source = JSON.parse(fs.readFileSync('movies-source.json', 'utf8'));
   source.forEach(m => { watchLinks[m.tmdb_id] = m.watch_link; });
-} catch {}
+} catch (e) {}
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err.message);
+});
 
 function tmdbFetch(apiPath) {
   return new Promise((resolve, reject) => {
@@ -41,7 +45,6 @@ function tmdbFetch(apiPath) {
 
 function attach(item, type) {
   if (watchLinks[item.id]) item.watch_link = watchLinks[item.id];
-  const gid = type === 'tv' ? 'genre_ids' : 'genre_ids';
   item.genre_names = (item.genre_ids || []).map(id => GENRE_MAP[id] || '').filter(Boolean);
   if (!item.genre_names.length && item.genres) {
     item.genre_names = item.genres.map(g => GENRE_MAP[g.id] || g.name).filter(Boolean);
@@ -49,6 +52,16 @@ function attach(item, type) {
   item.media_type = type;
   item.release_date = item.release_date || item.first_air_date || '';
   return item;
+}
+
+function fetchWithTimeout(url, options, timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    fetch(url, { ...options, signal: controller.signal })
+      .then(res => { clearTimeout(timer); resolve(res); })
+      .catch(err => { clearTimeout(timer); reject(err); });
+  });
 }
 
 const MIME = {
@@ -61,108 +74,132 @@ const MIME = {
   '.svg': 'image/svg+xml'
 };
 
+function sendJson(res, data, status = 200) {
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.end(JSON.stringify(data));
+}
+
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://localhost');
-  const p = url.pathname;
-  const json = (data) => {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    res.end(JSON.stringify(data));
-  };
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const p = url.pathname;
 
-  // Unified discover: /api/discover?type=movie|tv&genre=&language=&page=&sort=
-  if (p === '/api/discover') {
-    const type = url.searchParams.get('type') || 'movie';
-    const genre = url.searchParams.get('genre') || '';
-    const lang = url.searchParams.get('language') || '';
-    const page = url.searchParams.get('page') || 1;
-    const sort = url.searchParams.get('sort') || 'popularity.desc';
-    let tmdbUrl = `/discover/${type}?sort_by=${sort}&page=${page}`;
-    if (genre) tmdbUrl += `&with_genres=${genre}`;
-    if (lang) tmdbUrl += `&with_original_language=${lang}`;
-    const data = await tmdbFetch(tmdbUrl);
-    data.results = (data.results || []).map(r => attach(r, type));
-    json(data);
-    return;
-  }
+    // CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': '*'
+      });
+      res.end();
+      return;
+    }
 
-  // Unified detail: /api/detail?type=movie|tv&id=
-  if (p === '/api/detail') {
-    const type = url.searchParams.get('type') || 'movie';
-    const id = url.searchParams.get('id');
-    if (!id) { json({ error: 'no id' }); return; }
-    try {
-      const data = await tmdbFetch(`/${type}/${id}`);
-      data.genre_names = (data.genres || []).map(g => GENRE_MAP[g.id] || g.name).filter(Boolean);
-      if (watchLinks[data.id]) data.watch_link = watchLinks[data.id];
-      data.media_type = type;
-      json(data);
-    } catch { json({ error: 'not found' }); }
-    return;
-  }
-
-  // Search: /api/search?type=movie|tv&q=&page=
-  if (p === '/api/search') {
-    const type = url.searchParams.get('type') || 'movie';
-    const q = url.searchParams.get('q');
-    const page = url.searchParams.get('page') || 1;
-    if (!q) { json({ results: [] }); return; }
-    const data = await tmdbFetch(`/search/${type}?query=${encodeURIComponent(q)}&page=${page}`);
-    data.results = (data.results || []).map(r => attach(r, type));
-    json(data);
-    return;
-  }
-
-  // TV Season detail: /api/tv-season?id=&season=
-  if (p === '/api/tv-season') {
-    const id = url.searchParams.get('id');
-    const season = url.searchParams.get('season');
-    if (!id || !season) { json({ error: 'missing params' }); return; }
-    try {
-      const data = await tmdbFetch(`/tv/${id}/season/${season}`);
-      json(data);
-    } catch { json({ error: 'not found' }); }
-    return;
-  }
-
-  // Player URL: /api/player-url?imdb_id=&type=movie|tv
-  if (p === '/api/player-url') {
-    const imdbId = url.searchParams.get('imdb_id');
-    const mediaType = url.searchParams.get('type') || 'movie';
-    if (!imdbId) { json({ ok: false, embed_url: '' }); return; }
-    try {
-      const [imdbRes, apiRes] = await Promise.all([
-        fetch(`https://imdb.su/title/${imdbId}/`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000)
-        }),
-        fetch(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' }, signal: AbortSignal.timeout(8000)
-        })
-      ]);
-      let embedUrl = '';
-      if (imdbRes.status === 200) {
-        const html = await imdbRes.text();
-        const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
-        if (match) embedUrl = match[1];
+    // API routes
+    if (p === '/api/discover') {
+      try {
+        const type = url.searchParams.get('type') || 'movie';
+        const genre = url.searchParams.get('genre') || '';
+        const lang = url.searchParams.get('language') || '';
+        const page = url.searchParams.get('page') || 1;
+        const sort = url.searchParams.get('sort') || 'popularity.desc';
+        let tmdbUrl = `/discover/${type}?sort_by=${sort}&page=${page}`;
+        if (genre) tmdbUrl += `&with_genres=${genre}`;
+        if (lang) tmdbUrl += `&with_original_language=${lang}`;
+        const data = await tmdbFetch(tmdbUrl);
+        data.results = (data.results || []).map(r => attach(r, type));
+        sendJson(res, data);
+      } catch (e) {
+        sendJson(res, { results: [], total_pages: 0, error: e.message });
       }
-      const apiData = await apiRes.json();
-      const ok = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
-      json({ ok: !!ok, embed_url: embedUrl });
-    } catch { json({ ok: false, embed_url: '' }); }
-    return;
-  }
+      return;
+    }
 
-  // Static files
-  let filePath = p === '/' ? '/index.html' : p;
-  const fullPath = path.join(__dirname, filePath);
-  const ext = path.extname(filePath);
-  fs.readFile(fullPath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('File not found'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(data);
-  });
+    if (p === '/api/detail') {
+      try {
+        const type = url.searchParams.get('type') || 'movie';
+        const id = url.searchParams.get('id');
+        if (!id) { sendJson(res, { error: 'no id' }); return; }
+        const data = await tmdbFetch(`/${type}/${id}`);
+        data.genre_names = (data.genres || []).map(g => GENRE_MAP[g.id] || g.name).filter(Boolean);
+        if (watchLinks[data.id]) data.watch_link = watchLinks[data.id];
+        data.media_type = type;
+        sendJson(res, data);
+      } catch (e) {
+        sendJson(res, { error: 'not found' });
+      }
+      return;
+    }
+
+    if (p === '/api/search') {
+      try {
+        const type = url.searchParams.get('type') || 'movie';
+        const q = url.searchParams.get('q');
+        const page = url.searchParams.get('page') || 1;
+        if (!q) { sendJson(res, { results: [] }); return; }
+        const data = await tmdbFetch(`/search/${type}?query=${encodeURIComponent(q)}&page=${page}`);
+        data.results = (data.results || []).map(r => attach(r, type));
+        sendJson(res, data);
+      } catch (e) {
+        sendJson(res, { results: [], error: e.message });
+      }
+      return;
+    }
+
+    if (p === '/api/tv-season') {
+      try {
+        const id = url.searchParams.get('id');
+        const season = url.searchParams.get('season');
+        if (!id || !season) { sendJson(res, { error: 'missing params' }); return; }
+        const data = await tmdbFetch(`/tv/${id}/season/${season}`);
+        sendJson(res, data);
+      } catch (e) {
+        sendJson(res, { error: 'not found' });
+      }
+      return;
+    }
+
+    if (p === '/api/player-url') {
+      try {
+        const imdbId = url.searchParams.get('imdb_id');
+        const mediaType = url.searchParams.get('type') || 'movie';
+        if (!imdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
+        const [imdbRes, apiRes] = await Promise.all([
+          fetchWithTimeout(`https://imdb.su/title/${imdbId}/`, { headers: { 'User-Agent': 'Mozilla/5.0' } }),
+          fetchWithTimeout(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' }
+          })
+        ]);
+        let embedUrl = '';
+        if (imdbRes.status === 200) {
+          const html = await imdbRes.text();
+          const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
+          if (match) embedUrl = match[1];
+        }
+        const apiData = await apiRes.json();
+        const ok = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
+        sendJson(res, { ok: !!ok, embed_url: embedUrl });
+      } catch (e) {
+        sendJson(res, { ok: false, embed_url: '' });
+      }
+      return;
+    }
+
+    // Static files
+    let filePath = p === '/' ? '/index.html' : p;
+    const fullPath = path.join(__dirname, filePath);
+    const ext = path.extname(filePath);
+    fs.readFile(fullPath, (err, data) => {
+      if (err) { res.writeHead(404); res.end('File not found'); return; }
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+      res.end(data);
+    });
+  } catch (e) {
+    res.writeHead(500);
+    res.end('Server error');
+  }
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Alex Cinema on http://localhost:${PORT}`);
-  console.log(`📽️  ${Object.keys(watchLinks).length} titles in library`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Alex Cinema running on port ${PORT}`);
 });
