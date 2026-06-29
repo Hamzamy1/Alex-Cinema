@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alex Cinema - التفاصيل</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="/" class="logo">
+          <i class="fas fa-film"></i>
+          Alex Cinema
+        </a>
+        <nav class="nav">
+          <a href="/">الرئيسية</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="movie-detail">
+    <div class="container">
+      <button class="back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-right"></i>
+        رجوع
+      </button>
+      <div class="loading" id="loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        جارٍ التحميل...
+      </div>
+      <div class="detail-content" id="detailContent" style="display:none;">
+        <div class="detail-poster">
+          <img id="detailPoster" src="" alt="">
+        </div>
+        <div class="detail-info">
+          <h1 id="detailTitle"></h1>
+          <div class="detail-meta">
+            <span id="detailTypeLabel" class="type-badge"></span>
+            <span class="year" id="detailYear"></span>
+            <span class="rating" id="detailRating">
+              <i class="fas fa-star"></i>
+            </span>
+          </div>
+          <div class="detail-genres" id="detailGenres"></div>
+          <p class="detail-description" id="detailDescription"></p>
+          <button class="watch-btn" id="watchBtn" onclick="watchMovie(currentImdbId)" style="display:none;">
+            <i class="fas fa-play"></i>
+            <span id="watchBtnText">مشاهدة</span>
+          </button>
+          <p class="no-link-msg" id="noLinkMsg" style="display:none;color:#666;">
+            هذا المحتوى غير متاح للمشاهدة حاليًا
+          </p>
+        </div>
+      </div>
+
+      <!-- Seasons & Episodes (TV only) -->
+      <div id="seasonsSection" style="display:none;margin-top:40px;">
+        <div class="section-header">
+          <h2>الحلقات</h2>
+          <div class="season-picker">
+            <label>الموسم: </label>
+            <select id="seasonSelect" onchange="loadEpisodes()"></select>
+          </div>
+        </div>
+        <div class="episodes-grid" id="episodesGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Player Overlay -->
+  <div class="player-overlay" id="playerOverlay" style="display:none;">
+    <div class="player-container">
+      <div class="player-topbar">
+        <button class="player-back" onclick="closePlayer()">
+          <i class="fas fa-arrow-right"></i> رجوع
+        </button>
+        <span class="player-title" id="playerTitle"></span>
+      </div>
+      <div class="player-content">
+        <div class="player-intro" id="playerIntro">
+          <img class="player-poster" id="playerPoster" src="" alt="">
+          <div class="player-intro-overlay"></div>
+          <div class="player-intro-text">
+            <h2 id="playerMovieTitle"></h2>
+            <div class="player-countdown" id="playerCountdown">10</div>
+            <p>سيبدأ بعد...</p>
+          </div>
+          <div class="player-skip" onclick="skipIntro()">
+            تخطي <i class="fas fa-forward"></i>
+          </div>
+        </div>
+        <div class="player-iframe-wrap" id="playerIframeWrap" style="display:none;">
+          <iframe id="playerIframe" allow="autoplay;fullscreen;picture-in-picture;encrypted-media" allowfullscreen></iframe>
+        </div>
+      </div>
+      <div class="player-controls">
+        <button class="player-ctrl-btn" onclick="closePlayer()"><i class="fas fa-home"></i> الرئيسية</button>
+        <button class="player-ctrl-btn" onclick="replayMovie()"><i class="fas fa-redo"></i> إعادة</button>
+        <button class="player-ctrl-btn player-ctrl-fullscreen" onclick="toggleFullscreen()"><i class="fas fa-expand"></i> ملء الشاشة</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="errorSound" src="error.mp3" preload="auto"></audio>
+
+  <!-- Unavailable modal -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none;">
+    <div class="modal-box">
+      <div class="modal-icon">😅</div>
+      <h3>مش متاح دلوقتي!</h3>
+      <p>ده لسة نازل جديد هيلق يتسرب امتى<br>يروح امك لما يعدي شوية كده ابقى تعال تاني</p>
+      <button class="modal-btn" onclick="closeModal()">تمام</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p>جميع الحقوق محفوظة &copy; 2026 Alex Cinema</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

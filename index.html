@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alex Cinema</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="/" class="logo">
+          <i class="fas fa-film"></i>
+          Alex Cinema
+        </a>
+        <nav class="nav" id="mainNav">
+          <a href="#" class="active" data-section="home">الرئيسية</a>
+          <a href="#" data-section="movies">أفلام</a>
+          <a href="#" data-section="tv">مسلسلات</a>
+          <a href="#" data-section="arabic">عربي</a>
+          <a href="#" data-section="foreign">أجنبي</a>
+          <a href="#" class="desktop-only" data-section="genres">تصنيفات</a>
+        </nav>
+        <button class="mobile-menu-btn" id="menuToggle"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container">
+      <div class="hero-content">
+        <h1 id="heroTitle">أهلاً بك في Alex Cinema</h1>
+        <p id="heroSub">مش هتحتار و تقول أشوف إيه... إحنا جبناهولك لحد عندك.</p>
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchInput" placeholder="ابحث عن فيلم أو مسلسل...">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="filters-section" id="filtersSection">
+    <div class="container">
+      <div class="filters" id="genreFilters">
+        <button class="filter-btn active" data-filter="">الكل</button>
+        <button class="filter-btn" data-filter="28">أكشن</button>
+        <button class="filter-btn" data-filter="18">دراما</button>
+        <button class="filter-btn" data-filter="878">خيال علمي</button>
+        <button class="filter-btn" data-filter="35">كوميديا</button>
+        <button class="filter-btn" data-filter="12">مغامرة</button>
+        <button class="filter-btn" data-filter="27">رعب</button>
+        <button class="filter-btn" data-filter="10749">رومانسي</button>
+        <button class="filter-btn" data-filter="80">جريمة</button>
+        <button class="filter-btn" data-filter="16">انمي</button>
+        <button class="filter-btn" data-filter="53">اثارة</button>
+        <button class="filter-btn" data-filter="9648">غموض</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="movies-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 id="sectionTitle">الرئيسية</h2>
+        <span id="totalCount" class="movie-count"></span>
+      </div>
+      <div class="movies-grid" id="moviesGrid"></div>
+      <div class="loading" id="loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        جارٍ التحميل...
+      </div>
+      <div class="pagination" id="pagination">
+        <button class="page-btn" id="prevPage"><i class="fas fa-chevron-right"></i> السابق</button>
+        <span id="pageInfo">الصفحة 1</span>
+        <button class="page-btn" id="nextPage">التالي <i class="fas fa-chevron-left"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>جميع الحقوق محفوظة &copy; 2026 Alex Cinema</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

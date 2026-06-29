@@ -1,0 +1,793 @@
+const MOVIES_DATA = [
+  {
+    "id": 278,
+    "title": "The Shawshank Redemption",
+    "title_ar": "الخلاص من شاوشانك",
+    "year": 1994,
+    "genre": [
+      "دراما",
+      "جريمة"
+    ],
+    "rating": 8.723,
+    "poster": "https://image.tmdb.org/t/p/w500/KBUq6m4mWjNymPgNiflyKogSWS.jpg",
+    "description": "في أربعينيات القرن الماضي، يُدان المصرفي آندي دوفرين بجريمة قتل زوجته وعشيقها ويُزجّ به في سجن شاوشانك. داخل هذا العالم القاسي، يجد نفسه يعمل لصالح مدير فاسد مستغلًا مهاراته في المحاسبة. ومع مرور السنوات، يفرض آندي حضوره بين السجناء، ويكسب احترامهم — خصوصًا السجين رِد — بفضل ثباته ونزاهته وإصراره على التمسك بالأمل مهما اشتدت الظروف.",
+    "description_en": "Imprisoned in the 1940s for the double murder of his wife and her lover, upstanding banker Andy Dufresne begins a new life at the Shawshank prison, where he puts his accounting skills to work for an amoral warden. During his long stretch in prison, Dufresne comes to be admired by the other inmates -- including an older prisoner named Red -- for his integrity and unquenchable sense of hope.",
+    "watch_link": "https://www.youtube.com/watch?v=6hB3S9bIaco"
+  },
+  {
+    "id": 238,
+    "title": "The Godfather",
+    "title_ar": "العرّاب",
+    "year": 1972,
+    "genre": [
+      "دراما",
+      "جريمة"
+    ],
+    "rating": 8.687,
+    "poster": "https://image.tmdb.org/t/p/w500/q0wsNUEw7VSThyY22EjolcxNCjM.jpg",
+    "description": "يمتد من عام 1945 إلى عام 1955 ، وهو سرد تاريخي لعائلة جريمة كورليوني الإيطالية الأمريكية الخيالية. عندما ينجو مؤسس عائلة الجريمة المنظمة ، فيتو كورليوني ، بالكاد من محاولة اغتيال ، يتدخل ابنه الأصغر مايكل لرعاية القتلة المحتملين ، ويطلق حملة انتقامية دموية",
+    "description_en": "Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family. When organized crime family patriarch, Vito Corleone barely survives an attempt on his life, his youngest son, Michael steps in to take care of the would-be killers, launching a campaign of bloody revenge.",
+    "watch_link": "https://www.youtube.com/watch?v=sY1S34973zA"
+  },
+  {
+    "id": 155,
+    "title": "The Dark Knight",
+    "title_ar": "فارس الظلام",
+    "year": 2008,
+    "genre": [
+      "اكشن",
+      "جريمة",
+      "اثارة"
+    ],
+    "rating": 8.531,
+    "poster": "https://image.tmdb.org/t/p/w500/6Z9znq1IxwknrdPbXyr7NJJPhpP.jpg",
+    "description": "يبدأ باتمان فى محاربة العدو الجديد (الجوكر) الذي يسعى لنشر الذعر والشر في جوثام، وإثبات أن العيش بدون قواعد أفضل، مما يؤدي لصراع بين الاثنين يشترك فيه المفتش جوردن والمدعى العام هارفي دينت وراشيل صديقة بروس وين.",
+    "description_en": "Batman raises the stakes in his war on crime. With the help of Lt. Jim Gordon and District Attorney Harvey Dent, Batman sets out to dismantle the remaining criminal organizations that plague the streets. The partnership proves to be effective, but they soon find themselves prey to a reign of chaos unleashed by a rising criminal mastermind known to the terrified citizens of Gotham as the Joker.",
+    "watch_link": "https://www.youtube.com/watch?v=EXeTwQWrcwY"
+  },
+  {
+    "id": 680,
+    "title": "Pulp Fiction",
+    "title_ar": "خيال رخيص",
+    "year": 1994,
+    "genre": [
+      "اثارة",
+      "جريمة",
+      "كوميديا"
+    ],
+    "rating": 8.483,
+    "poster": "https://image.tmdb.org/t/p/w500/A3NXS5e7Zc3FRyi63b7TdPGjFwI.jpg",
+    "description": "يتلاقى الرجل الضارب المحب للبرغر ، وشريكه الفلسفي ، ورجل العصابات المدمن على المخدرات ، والملاكم المغسول في هذه الجريمة الكوميدية المترامية الأطراف. تتجلى مغامراتهم في ثلاث قصص تتنقل ببراعة ذهابًا وإيابًا في الوقت المناسب.",
+    "description_en": "A burger-loving hit man, his philosophical partner, a drug-addled gangster's moll and a washed-up boxer converge in this sprawling, comedic crime caper. Their adventures unfurl in three stories that ingeniously trip back and forth in time.",
+    "watch_link": "https://www.youtube.com/watch?v=s7EdQ4FqbhY"
+  },
+  {
+    "id": 424,
+    "title": "Schindler's List",
+    "title_ar": "قائمة شندلر",
+    "year": 1993,
+    "genre": [
+      "دراما",
+      "تاريخي",
+      "حرب"
+    ],
+    "rating": 8.57,
+    "poster": "https://image.tmdb.org/t/p/w500/k4YLDFLncG5H0FTrUhVmpMiLLHe.jpg",
+    "description": "القصة الحقيقية لكيفية إنقاذ رجل الأعمال أوسكار شندلر أكثر من ألف يهودي من أرواح النازيين أثناء عملهم كعبيد في مصنعه خلال الحرب العالمية الثانية.",
+    "description_en": "The true story of how businessman Oskar Schindler saved over a thousand Jewish lives from the Nazis while they worked as slaves in his factory during World War II.",
+    "watch_link": "https://www.youtube.com/watch?v=gG22XNhtnoY"
+  },
+  {
+    "id": 27205,
+    "title": "Inception",
+    "title_ar": "استهلال",
+    "year": 2010,
+    "genre": [
+      "اكشن",
+      "خيال علمي",
+      "مغامرة"
+    ],
+    "rating": 8.372,
+    "poster": "https://image.tmdb.org/t/p/w500/okXrvv9kCNrYTpjMQTpmzXV9JCi.jpg",
+    "description": "تدور احداث الفيلم حول كوب (ليوناردو دي كابريو) هو عميل من طراز خاص جدًا ومستوى رفيع للغاية، في الواقع هو متسلل أحلام! يقوم بتجنيده رجل أعمال فاحش الثراء يدعى (سايتو) كي يقوم بالتسلل إلى عقل أحد منافسيه يدعى (روبرت فيشر) بمساعدة جهاز خاص، بزرع فكرة داخل عقل الرجل تبدو وكأنها تأتي من داخله هو نفسه، وليست من الخارج. الفكرة هي أن يفكك الرجل شركات أبيه التي سيورثها عنه.",
+    "description_en": "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life as payment for a task considered to be impossible: \"inception\", the implantation of another person's idea into a target's subconscious.",
+    "watch_link": "https://www.youtube.com/watch?v=YoHD9XEInc0"
+  },
+  {
+    "id": 550,
+    "title": "Fight Club",
+    "title_ar": "نادي القتال",
+    "year": 1999,
+    "genre": [
+      "دراما",
+      "اثارة"
+    ],
+    "rating": 8.438,
+    "poster": "https://image.tmdb.org/t/p/w500/2xmknsEcjSaznfKsRY6VloqKRUo.jpg",
+    "description": "إدوارد يتعرض لضغوط حتى يصل به الحال إلى أنه لا يستطيع النوم لفتراتٍ طويلة، لكنه يجد بعض السلام في جلسات العلاج النفسي الجماعي، يتعرف إدوارد على أحد الأشخاص وهو (تايلر ديردن) الذي يحرره من تعلقه بالأشياء الذي تستعبده ،ثم يحرره من خوفه من الناس. يقومان معًا بإنشاء نادي القتال الذي يجذب الكثير من الأفراد المحبطين ،الذين يقومون بإخراج طاقة غضبهم وكرههم للعالم في القتال.",
+    "description_en": "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy. Their concept catches on, with underground \"fight clubs\" forming in every town, until an eccentric gets in the way and ignites an out-of-control spiral toward oblivion.",
+    "watch_link": "https://www.youtube.com/watch?v=SUXWAEX2jlg"
+  },
+  {
+    "id": 13,
+    "title": "Forrest Gump",
+    "title_ar": "فورست غامب",
+    "year": 1994,
+    "genre": [
+      "كوميديا",
+      "دراما",
+      "رومانسي"
+    ],
+    "rating": 8.464,
+    "poster": "https://image.tmdb.org/t/p/w500/qAfOKolnPqKcSrtNLQxUhbDVHwW.jpg",
+    "description": "لقد أنجز رجل ذو معدل ذكاء منخفض أشياء عظيمة في حياته وكان حاضرا خلال أحداث تاريخية مهمة - في كل حالة ، يتجاوز بكثير ما يتخيل أي شخص أنه يمكن أن يفعله. ولكن على الرغم من كل ما حققه ، فإن حبه الحقيقي الوحيد يراوغه.",
+    "description_en": "A man with a low IQ has accomplished great things in his life and been present during significant historic events—in each case, far exceeding what anyone imagined he could do. But despite all he has achieved, his one true love eludes him.",
+    "watch_link": "https://www.youtube.com/watch?v=uPIEn0MQsuw"
+  },
+  {
+    "id": 122,
+    "title": "The Lord of the Rings: The Return of the King",
+    "title_ar": "سيد الخواتم: عودة الملك",
+    "year": 2003,
+    "genre": [
+      "مغامرة",
+      "خيال",
+      "اكشن"
+    ],
+    "rating": 8.5,
+    "poster": "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
+    "description": "تم الكشف عن أراغورن باعتباره وريث الملوك القدامى حيث يكافح هو وقاندالف والأعضاء الآخرون في الشركة المكسورة لإنقاذ جوندور من قوات سورون. في هذه الأثناء ، يقترب فرودو وسام من الخاتم إلى قلب موردور ، عالم اللورد المظلم.",
+    "description_en": "As armies mass for a final battle that will decide the fate of the world--and powerful, ancient forces of Light and Dark compete to determine the outcome--one member of the Fellowship of the Ring is revealed as the noble heir to the throne of the Kings of Men. Yet, the sole hope for triumph over evil lies with a brave hobbit, Frodo, who, accompanied by his loyal friend Sam and the hideous, wretched Gollum, ventures deep into the very dark heart of Mordor on his seemingly impossible quest to destroy the Ring of Power.​",
+    "watch_link": "https://www.youtube.com/watch?v=r5X-hFf6Bwo"
+  },
+  {
+    "id": 603,
+    "title": "The Matrix",
+    "title_ar": "الماتريكس",
+    "year": 1999,
+    "genre": [
+      "اكشن",
+      "خيال علمي"
+    ],
+    "rating": 8.249,
+    "poster": "https://image.tmdb.org/t/p/w500/nrTnHdza19bagccAj9LX5VCsU7g.jpg",
+    "description": "يدرك أحد قراصنة الكمبيوتر أن ما يعتبره معظم الناس واقعًا هو في الحقيقة محاكاة يتم إنشاؤها بواسطة آلات، فينضم إلى المتمردين ليتحرر.",
+    "description_en": "Set in the 22nd century, The Matrix tells the story of a computer hacker who joins a group of underground insurgents fighting the vast and powerful computers who now rule the earth.",
+    "watch_link": "https://www.youtube.com/watch?v=vKQi3bBA1y8"
+  },
+  {
+    "id": 769,
+    "title": "GoodFellas",
+    "title_ar": "الرفاق الصالحون",
+    "year": 1990,
+    "genre": [
+      "دراما",
+      "جريمة"
+    ],
+    "rating": 8.454,
+    "poster": "https://image.tmdb.org/t/p/w500/eUXk1r8FjGB9TRJb7LWJHRohFI5.jpg",
+    "description": "يروي رجل العصابات السابق \"هنري هيل\" قصّة صعوده وسقوطه المثيرة والعنيفة وسط عائلة إجرامية في \"نيويورك\"، حيث يتحوّل حلم كبير إلى كابوس مرعب.",
+    "description_en": "The true story of Henry Hill, a half-Irish, half-Sicilian Brooklyn kid who is adopted by neighbourhood gangsters at an early age and climbs the ranks of a Mafia family under the guidance of Jimmy Conway.",
+    "watch_link": "https://www.youtube.com/watch?v=2ilzidi_J8Q"
+  },
+  {
+    "id": 157336,
+    "title": "Interstellar",
+    "title_ar": "بين النجوم",
+    "year": 2014,
+    "genre": [
+      "مغامرة",
+      "دراما",
+      "خيال علمي"
+    ],
+    "rating": 8.479,
+    "poster": "https://image.tmdb.org/t/p/w500/yA29YRrLgZaM1o0SYSEyUx7il7W.jpg",
+    "description": "تدور الأحداث حول مجموعة من المستكشفين يستفيدون من ثقب دودي اكتُشف حديثًا لتجاوز حدود السفر البشري عبر الفضاء، وعبور المسافات الشاسعة التي تفصل بين العوالم البعيدة، في رحلة \"بين النجوم\" قد تغيّر مصير البشرية إلى الأبد.",
+    "description_en": "The adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.",
+    "watch_link": "https://www.youtube.com/watch?v=zSWdZVtXT7E"
+  },
+  {
+    "id": 496243,
+    "title": "Parasite",
+    "title_ar": "طفيلي",
+    "year": 2019,
+    "genre": [
+      "كوميديا",
+      "اثارة",
+      "دراما"
+    ],
+    "rating": 8.493,
+    "poster": "https://image.tmdb.org/t/p/w500/1lHlDVNOABldVoyrt2ZsCrj1zMp.jpg",
+    "description": "تدور أحداث الفيلم حول عائلة عاطلة عن العمل، تُقيم داخل شقة فقيرة، تتغير حياتهم كُليًا عندما يلتحق الابن بوظيفة مدرس لابنة عائلة ثرية، وسرعان ما يصير جميع أفراد اﻷسرة الفقيرة عاملين لدى اﻷسرة الثرية إلى أن يتورطوا في حادث غير متوقع.",
+    "description_en": "All unemployed, Ki-taek's family takes peculiar interest in the wealthy and glamorous Parks for their livelihood until they get entangled in an unexpected incident.",
+    "watch_link": "https://www.youtube.com/watch?v=5xH0HfJHsaY"
+  },
+  {
+    "id": 274,
+    "title": "The Silence of the Lambs",
+    "title_ar": "صمت الحملان",
+    "year": 1991,
+    "genre": [
+      "جريمة",
+      "اثارة",
+      "دراما"
+    ],
+    "rating": 8.345,
+    "poster": "https://image.tmdb.org/t/p/w500/uZrChU8HDB2dM5txVwLz9lPRbHE.jpg",
+    "description": "كلاريس ستارلينج طالبة متفوقة في أكاديمية التدريب التابعة لمكتب التحقيقات الفيدرالي. يريد جاك كروفورد من كلاريس إجراء مقابلة مع الدكتور هانيبال ليكتر ، وهو طبيب نفسي لامع ومختل عقليًا عنيفًا ، ويقضي الحياة خلف القضبان بسبب جرائم قتل وأكل لحوم البشر. يعتقد كروفورد أن ليكتر قد يكون لديه نظرة ثاقبة للقضية وأن ستارلينج ، بصفتها امرأة شابة جذابة ، قد تكون مجرد الطعم لجذبه.",
+    "description_en": "Clarice Starling is a top student at the FBI's training academy.  Jack Crawford wants Clarice to interview Dr. Hannibal Lecter, a brilliant psychiatrist who is also a violent psychopath, serving life behind bars for various acts of murder and cannibalism.  Crawford believes that Lecter may have insight into a case and that Starling, as an attractive young woman, may be just the bait to draw him out.",
+    "watch_link": "https://www.youtube.com/watch?v=W6GDil0r41I"
+  },
+  {
+    "id": 857,
+    "title": "Saving Private Ryan",
+    "title_ar": "إنقاذ المجند ريان",
+    "year": 1998,
+    "genre": [
+      "حرب",
+      "دراما",
+      "تاريخي"
+    ],
+    "rating": 8.228,
+    "poster": "https://image.tmdb.org/t/p/w500/91ejGOKgY7i11gcAxXQEToem79y.jpg",
+    "description": "عندما اقتحمت القوات الأمريكية شواطئ نورماندي ، مات ثلاثة أشقاء في ساحة المعركة ، بينما حوصر رابع خلف خطوط العدو. تم تكليف قائد الحارس جون ميلر وسبعة رجال باختراق الأراضي التي تسيطر عليها ألمانيا وإحضار الصبي إلى المنزل.",
+    "description_en": "As U.S. troops storm the beaches of Normandy, three brothers lie dead on the battlefield, with a fourth trapped behind enemy lines. Ranger captain John Miller and seven men are tasked with penetrating German-held territory and bringing the boy home.",
+    "watch_link": "https://www.youtube.com/watch?v=zwhP5b4tD6g"
+  },
+  {
+    "id": 98,
+    "title": "Gladiator",
+    "title_ar": "المجالد",
+    "year": 2000,
+    "genre": [
+      "اكشن",
+      "دراما",
+      "مغامرة"
+    ],
+    "rating": 8.226,
+    "poster": "https://image.tmdb.org/t/p/w500/3ThtMXP24MxSkUOTqFElQdWzAXe.jpg",
+    "description": "في روما القديمة، تتحول حياة الجنرال العظيم ماكسيموس إلى مأساة عندما يقتل الإمبراطور الجديد كومودوس عائلته ويرسله للعبودية. يجد ماكسيموس نفسه مجبراً على القتال كمصارع في حلبات الموت، متخذاً طريقاً دموياً نحو روما حيث يسعى للانتقام من الطاغية الذي دمر حياته.",
+    "description_en": "After the death of Emperor Marcus Aurelius, his devious son takes power and demotes Maximus, one of Rome's most capable generals who Marcus preferred. Eventually, Maximus is forced to become a gladiator and battle to the death against other men for the amusement of paying audiences.",
+    "watch_link": "https://www.youtube.com/watch?v=owK1qxDselE"
+  },
+  {
+    "id": 129,
+    "title": "Spirited Away",
+    "title_ar": "المخطوفة",
+    "year": 2001,
+    "genre": [
+      "انميشن",
+      "عائلي",
+      "خيال"
+    ],
+    "rating": 8.534,
+    "poster": "https://image.tmdb.org/t/p/w500/o9bDF4M3CQPn8e6PMAhJW5K6ciQ.jpg",
+    "description": "تتجول \"شيهيرو\" في عالم سحري تحكمه ساحرة - تقوم بتحويل كل من يعصيها إلى حيوانات.",
+    "description_en": "A young girl, Chihiro, becomes trapped in a strange new world of spirits. When her parents undergo a mysterious transformation, she must call upon the courage she never knew she had to free her family.",
+    "watch_link": "https://www.youtube.com/watch?v=ByXuk9QqQkk"
+  },
+  {
+    "id": 497,
+    "title": "The Green Mile",
+    "title_ar": "الميل الأخضر",
+    "year": 1999,
+    "genre": [
+      "خيال",
+      "دراما",
+      "جريمة"
+    ],
+    "rating": 8.506,
+    "poster": "https://image.tmdb.org/t/p/w500/vAHuvaUC885P78BNS3BMu9qM7ve.jpg",
+    "description": "حكاية خارقة للطبيعة على ذمة الإعدام في سجن جنوبي ، حيث يمتلك العملاق اللطيف جون كوفي القوة الغامضة لعلاج أمراض الناس. عندما يتعرف حارس المبنى الرئيسي ، بول إدجكومب ، على هدية كوفي المعجزة ، يحاول يائسًا المساعدة في تجنب إعدام الرجل المدان.",
+    "description_en": "A supernatural tale set on death row in a Southern prison, where gentle giant John Coffey possesses the mysterious power to heal people's ailments. When the cell block's head guard, Paul Edgecomb, recognizes Coffey's miraculous gift, he tries desperately to help stave off the condemned man's execution.",
+    "watch_link": "https://www.youtube.com/watch?v=Ki4haFrqSrw"
+  },
+  {
+    "id": 1422,
+    "title": "The Departed",
+    "title_ar": "الراحل",
+    "year": 2006,
+    "genre": [
+      "دراما",
+      "اثارة",
+      "جريمة"
+    ],
+    "rating": 8.16,
+    "poster": "https://image.tmdb.org/t/p/w500/aPxXQAE2ku0RoN1HSEIGi9KwwfB.jpg",
+    "description": "للقضاء على المافيا الأيرلندية في جنوب بوسطن ، ترسل الشرطة واحدًا منهم للتسلل إلى العالم السفلي ، دون أن تدرك أن النقابة قد فعلت الشيء نفسه. في حين أن شرطيًا سريًا يتغاضى مع زعيم العصابات ، يرتفع مجرم محترف في صفوف الشرطة. لكن سرعان ما يكتشف كلا الجانبين وجود الخلد بينهم.",
+    "description_en": "To take down South Boston's Irish Mafia, the police send in one of their own to infiltrate the underworld, not realizing the syndicate has done likewise. While an undercover cop curries favor with the mob kingpin, a career criminal rises through the police ranks. But both sides soon discover there's a mole among them.",
+    "watch_link": "https://www.youtube.com/watch?v=iojhqm0JTW4"
+  },
+  {
+    "id": 244786,
+    "title": "Whiplash",
+    "title_ar": "ويبلاش",
+    "year": 2014,
+    "genre": [
+      "دراما",
+      "موسيقى",
+      "اثارة"
+    ],
+    "rating": 8.375,
+    "poster": "https://image.tmdb.org/t/p/w500/mcv2wacN8VO8YkOPZrcoPkqL34P.jpg",
+    "description": "تحت إشراف مدرب لا يرحم ، يبدأ عازف إيقاع شاب موهوب في السعي وراء الكمال بأي ثمن ، حتى إنسانيته.",
+    "description_en": "Under the direction of a ruthless instructor, a talented young drummer begins to pursue perfection at any cost, even his humanity.",
+    "watch_link": "https://www.youtube.com/watch?v=7d_jQycdQGo"
+  },
+  {
+    "id": 1124,
+    "title": "The Prestige",
+    "title_ar": "العظمة",
+    "year": 2006,
+    "genre": [
+      "دراما",
+      "غموض",
+      "خيال علمي"
+    ],
+    "rating": 8.209,
+    "poster": "https://image.tmdb.org/t/p/w500/o3AhvHT7BcIKN5g6YkkvQu1br98.jpg",
+    "description": "يستميت ساحران متنافسان لمعرفة أسرار بعضهم البعض، فتدفعهم المنافسة لممارسة خدع سحرية خطيرة، وسرعان ما تتحول إلى خدعٍ مميتة.",
+    "description_en": "A mysterious story of two magicians whose intense rivalry leads them on a life-long battle for supremacy -- full of obsession, deceit and jealousy with dangerous and deadly consequences.",
+    "watch_link": "https://www.youtube.com/watch?v=o4gHCmTQDlw"
+  },
+  {
+    "id": 68718,
+    "title": "Django Unchained",
+    "title_ar": "جانغو الحر",
+    "year": 2012,
+    "genre": [
+      "دراما",
+      "غرب امريكي"
+    ],
+    "rating": 8.192,
+    "poster": "https://image.tmdb.org/t/p/w500/uxcamTjWWtQ7NjTOJa9TadTFsdV.jpg",
+    "description": "الحياة والحرية والسعي وراء الانتقام.  بمساعدة صياد جوائز ألماني ، ينطلق عبد محرر لإنقاذ زوجته من مالك مزرعة وحشي في ولاية ميسيسيبي.",
+    "description_en": "With the help of a German bounty hunter, a freed slave sets out to rescue his wife from a brutal Mississippi plantation owner.",
+    "watch_link": "https://www.youtube.com/watch?v=0fUCuvNlOCg"
+  },
+  {
+    "id": 812,
+    "title": "Aladdin",
+    "title_ar": "علاء الدين",
+    "year": 1992,
+    "genre": [
+      "انميشن",
+      "عائلي",
+      "مغامرة",
+      "خيال",
+      "رومانسي"
+    ],
+    "rating": 7.655,
+    "poster": "https://image.tmdb.org/t/p/w500/9rAXLFabztJgAErmRNE3wrcmKph.jpg",
+    "description": "علاء الدين هو طفل شوارع يعيش في مدينة كبيرة مزدحمة مع صديقه المخلص القرد (آبو)، ليصادف في المدينة الأميرة ياسمين، ويحبها، فيذهب إلى السجن و يتورط في مؤامرة لحكم الأرض من تخطيط مستشار السلطان (جعفر) بمساعدة مصباح غامض.",
+    "description_en": "In the boorish city of Agrabah, kind-hearted street urchin Aladdin and Princess Jasmine fall in love, although she can only marry a prince. He and power-hungry Grand Vizier Jafar vie for a magic lamp that can fulfill their wishes.",
+    "watch_link": "https://www.youtube.com/watch?v=4sj1MT05lAA"
+  },
+  {
+    "id": 299534,
+    "title": "Avengers: Endgame",
+    "title_ar": "المنتقمون: نهاية اللعبة",
+    "year": 2019,
+    "genre": [
+      "مغامرة",
+      "خيال علمي",
+      "اكشن"
+    ],
+    "rating": 8.237,
+    "poster": "https://image.tmdb.org/t/p/w500/ieYywp9LuUI0Xxc5qkreP97cIQn.jpg",
+    "description": "بعد الأحداث المدمّرة لفيلم Avengers: Infinity War، أصبح الكون في حالة خراب بسبب أفعال الفضائي المجنون، ثانوس. وبمساعدة الحلفاء المتبقين، يجب على المنتقمين أن يجتمعوا مرة أخرى من أجل التراجع عن أفعال ثانوس وإعادة النظام إلى الكون مرة أخيرة، مهما كانت العواقب التي قد تنتظرهم.",
+    "description_en": "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos. With the help of remaining allies, the Avengers must assemble once more in order to undo Thanos' actions and restore order to the universe once and for all, no matter what consequences may be in store.",
+    "watch_link": "https://www.youtube.com/watch?v=TcMBFSGVi1c"
+  },
+  {
+    "id": 354912,
+    "title": "Coco",
+    "title_ar": "كوكو",
+    "year": 2017,
+    "genre": [
+      "عائلي",
+      "انميشن",
+      "موسيقى",
+      "مغامرة"
+    ],
+    "rating": 8.198,
+    "poster": "https://image.tmdb.org/t/p/w500/6vK2fKqxBB8q0gJD9CYL2wKJvqT.jpg",
+    "description": "الاحتفال بالعمر\r على الرغم من الحظر المحير الذي فرضته عائلته منذ أجيال على الموسيقى ، يحلم ميغيل بأن يصبح موسيقيا بارعا مثل معبوده إرنستو دي لا كروز. في محاولة يائسة لإثبات موهبته ، يجد ميغيل نفسه في أرض الموتى المذهلة والملونة بعد سلسلة غامضة من الأحداث. على طول الطريق ، يلتقي المحتال الساحر هيكتور ، وينطلقان معا في رحلة غير عادية لفتح القصة الحقيقية وراء تاريخ عائلة ميغيل.",
+    "description_en": "Despite his family’s baffling generations-old ban on music, Miguel dreams of becoming an accomplished musician like his idol, Ernesto de la Cruz. Desperate to prove his talent, Miguel finds himself in the stunning and colorful Land of the Dead following a mysterious chain of events. Along the way, he meets charming trickster Hector, and together, they set off on an extraordinary journey to unlock the real story behind Miguel's family history.",
+    "watch_link": "https://www.youtube.com/watch?v=Rvr68u6k5sI"
+  },
+  {
+    "id": 475557,
+    "title": "Joker",
+    "title_ar": "جوكر",
+    "year": 2019,
+    "genre": [
+      "جريمة",
+      "اثارة",
+      "دراما"
+    ],
+    "rating": 8.123,
+    "poster": "https://image.tmdb.org/t/p/w500/ik5F4wBJW6HCJCqpSKwly9782cI.jpg",
+    "description": "خلال الثمانينيات من القرن الماضي، ممثل كوميدي فاشل - مدفوعًا بالجنون - يتحول إلى حياة الجريمة والفوضى في مدينة قوثام بينما يصبح شخصية مجرمة بنفسية سيئة.",
+    "description_en": "During the 1980s, a failed stand-up comedian is driven insane and turns to a life of crime and chaos in Gotham City while becoming an infamous psychopathic crime figure.",
+    "watch_link": "https://www.youtube.com/watch?v=zAGVQLHvwOY"
+  },
+  {
+    "id": 37799,
+    "title": "The Social Network",
+    "title_ar": "الشبكة الاجتماعية",
+    "year": 2010,
+    "genre": [
+      "دراما"
+    ],
+    "rating": 7.375,
+    "poster": "https://image.tmdb.org/t/p/w500/toDPO6Q5AVCCTYrwehbqW44I8Ul.jpg",
+    "description": "في إحدى ليالي خريف عام 2003 ، جلس مارك زوكربيرج ، جامع جامعي وعبقرية برمجة الكمبيوتر في جامعة هارفارد ، أمام جهاز الكمبيوتر الخاص به وبدأ بحرارة العمل على فكرة جديدة. في خضم موجة من التدوين والبرمجة ، سرعان ما يتحول ما يبدأ في غرفة سكنه كموقع صغير بين الأصدقاء إلى شبكة اجتماعية عالمية وثورة في الاتصال. بعد ست سنوات فقط و 500 مليون صديق ، أصبح مارك زوكربيرج أصغر ملياردير في التاريخ ... لكن بالنسبة لرجل الأعمال هذا ، يؤدي النجاح إلى تعقيدات شخصية وقانونية.",
+    "description_en": "In 2003, Harvard undergrad and computer programmer Mark Zuckerberg begins work on a new concept that eventually turns into the global social network known as Facebook. Six years later, Mark is one of the youngest billionaires ever, but his unprecedented success leads to both personal and legal complications when he ends up on the receiving end of two lawsuits, one involving his former friend.",
+    "watch_link": "https://www.youtube.com/watch?v=lB95KLmpLR4"
+  },
+  {
+    "id": 245891,
+    "title": "John Wick",
+    "title_ar": "جون ويك",
+    "year": 2014,
+    "genre": [
+      "اكشن",
+      "اثارة"
+    ],
+    "rating": 7.458,
+    "poster": "https://image.tmdb.org/t/p/w500/AhFvO9Yl5W767qwao3rKpuB2LbC.jpg",
+    "description": "تدور أحداث الفيلم حول القاتل المحترف السابق جون ويك (كيانو ريفز) ، والذي يحدث له شيء يعكر عليه حياته المسالمة الحالية ، حيث يقوم أحد اللصوص باقتحام بيته ، وسرقة سيارته ، وقتل كلبه ، الكلب الذي أعطته له زوجته السابقة ، فيذهب (جون) إلى (نيويورك) سعيا إلى الانتقام من هذا اللص ، ولكن يكتشف أن والد هذا اللص هو زعيم عصابة روسي ، والذي يضع مكافأة لمن يقتل (جون) ، وإذا بـ(ماركوس) الشريك السابق ، وصديق (جون) يحاول الحصول على هذه المكافأة .",
+    "description_en": "Ex-hitman John Wick comes out of retirement to track down the gangsters that took everything from him.",
+    "watch_link": "https://www.youtube.com/watch?v=2AUmvWm5ZDQ"
+  },
+  {
+    "id": 76341,
+    "title": "Mad Max: Fury Road",
+    "title_ar": "ماكس المجنون  طريق الغضب",
+    "year": 2015,
+    "genre": [
+      "اكشن",
+      "مغامرة",
+      "خيال علمي"
+    ],
+    "rating": 7.634,
+    "poster": "https://image.tmdb.org/t/p/w500/rvoQHUQGskr7HIQdsyYeOe0GYiL.jpg",
+    "description": "في أقصى أطراف الأرض، وسط صحراء قاحلة وعالم ممزق، يقاتل الجميع بجنون من أجل البقاء. في قلب الفوضى، يهرب متمردان... وقد يكون بيدهما أمل استعادة النظام.",
+    "description_en": "An apocalyptic story set in the furthest reaches of our planet, in a stark desert landscape where humanity is broken, and most everyone is crazed fighting for the necessities of life. Within this world exist two rebels on the run who just might be able to restore order.",
+    "watch_link": "https://www.youtube.com/watch?v=hEJnMQG9ev8"
+  },
+  {
+    "id": 569094,
+    "title": "Spider-Man: Across the Spider-Verse",
+    "title_ar": "سبايدرمان: عبر عالم العنكبوت",
+    "year": 2023,
+    "genre": [
+      "انميشن",
+      "اكشن",
+      "مغامرة",
+      "خيال علمي"
+    ],
+    "rating": 8.338,
+    "poster": "https://image.tmdb.org/t/p/w500/xmZSu0hdbuwb4mJIrocpKfnVjbZ.jpg",
+    "description": "بعد مرور فترة طويلة، يتلقى مايلز موراليس زيارة جديدة من جوين ستيسي، ومعًا ينطلق الثنائي في مغامرة جديدة مليئة بالمخاطر والأعداء عبر عالم العنكبوت.",
+    "description_en": "After reuniting with Gwen Stacy, Brooklyn’s full-time, friendly neighborhood Spider-Man is catapulted across the Multiverse, where he encounters the Spider Society, a team of Spider-People charged with protecting the Multiverse's very existence. But when the heroes clash on how to handle a new threat, Miles finds himself pitted against the other Spiders and must set out on his own to save those he loves most.",
+    "watch_link": "https://www.youtube.com/watch?v=shW9i6k8cB0"
+  },
+  {
+    "id": 872585,
+    "title": "Oppenheimer",
+    "title_ar": "أوبنهايمر",
+    "year": 2023,
+    "genre": [
+      "دراما",
+      "تاريخي"
+    ],
+    "rating": 8.025,
+    "poster": "https://image.tmdb.org/t/p/w500/qsX1in0bR35lbtS0m9Sdaal02K4.jpg",
+    "description": "فلم يحكي السيرة الذاتية وقصة العالم الأمريكي روبرت أوبنهايمر ودوره في تطوير القنبلة الذرية، وكيف غير مشروع مانهاتن من كل شيء في العالم.",
+    "description_en": "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
+    "watch_link": "https://www.youtube.com/watch?v=uYPbbksJxIg"
+  },
+  {
+    "id": 120467,
+    "title": "The Grand Budapest Hotel",
+    "title_ar": "The Grand Budapest Hotel",
+    "year": 2014,
+    "genre": [
+      "كوميديا",
+      "دراما"
+    ],
+    "rating": 8,
+    "poster": "https://image.tmdb.org/t/p/w500/wGP7NVt1IM3ZlTjLpswA92KLHbD.jpg",
+    "description": "يحكي فندق Grand Budapest Hotel عن كونسيرج أسطوري في فندق أوروبي شهير بين الحربين وصداقته مع موظف شاب أصبح ربيبه الموثوق به. تتضمن القصة سرقة واستعادة لوحة لا تقدر بثمن من عصر النهضة ، والمعركة من أجل ثروة عائلية هائلة والاضطرابات البطيئة ثم المفاجئة التي غيرت أوروبا خلال النصف الأول من القرن العشرين.",
+    "description_en": "The Grand Budapest Hotel tells of a legendary concierge at a famous European hotel between the wars and his friendship with a young employee who becomes his trusted protégé. The story involves the theft and recovery of a priceless Renaissance painting, the battle for an enormous family fortune and the slow and then sudden upheavals that transformed Europe during the first half of the 20th century.",
+    "watch_link": "https://www.youtube.com/watch?v=1Fg5iWmQjwk"
+  },
+  {
+    "id": 447332,
+    "title": "A Quiet Place",
+    "title_ar": "مكان هادئ",
+    "year": 2018,
+    "genre": [
+      "رعب",
+      "دراما",
+      "خيال علمي"
+    ],
+    "rating": 7.393,
+    "poster": "https://image.tmdb.org/t/p/w500/tiqgOGacYEzwb0ByflQlidc9ooy.jpg",
+    "description": "تُجبر عائلة على العيش في صمت مختبئة من مخلوقات تصطاد بالصوت.",
+    "description_en": "A family is forced to live in silence while hiding from creatures that hunt by sound.",
+    "watch_link": "https://www.youtube.com/watch?v=WR7cc5t7tv8"
+  },
+  {
+    "id": 419430,
+    "title": "Get Out",
+    "title_ar": "اخرج",
+    "year": 2017,
+    "genre": [
+      "غموض",
+      "اثارة",
+      "رعب"
+    ],
+    "rating": 7.624,
+    "poster": "https://image.tmdb.org/t/p/w500/lAVWzDYBLK8tbkO2ETQhARU2BAj.jpg",
+    "description": "يذهب كريس وصديقته روز إلى شمال الولاية لزيارة والديها لقضاء عطلة نهاية الأسبوع. في البداية ، يقرأ كريس سلوك العائلة المفرط في التكيف كمحاولات عصبية للتعامل مع علاقة ابنتهما بين الأعراق ، ولكن مع تقدم عطلة نهاية الأسبوع ، تقوده سلسلة من الاكتشافات المزعجة بشكل متزايد إلى حقيقة لم يكن يتخيلها أبدا.",
+    "description_en": "Chris and his girlfriend Rose go upstate to visit her parents for the weekend. At first, Chris reads the family's overly accommodating behavior as nervous attempts to deal with their daughter's interracial relationship, but as the weekend progresses, a series of increasingly disturbing discoveries lead him to a truth that he never could have imagined.",
+    "watch_link": "https://www.youtube.com/watch?v=DzfpyUB60YY"
+  },
+  {
+    "id": 862,
+    "title": "Toy Story",
+    "title_ar": "حكاية لعبة",
+    "year": 1995,
+    "genre": [
+      "عائلي",
+      "كوميديا",
+      "انميشن",
+      "مغامرة"
+    ],
+    "rating": 7.979,
+    "poster": "https://image.tmdb.org/t/p/w500/hX5TEEzea1XX8t2V9VK5InW4M7x.jpg",
+    "description": "تعيش ألعاب آندي، بقيادة وودي، بسعادة في غرفته حتى عيد ميلاد آندي الذي جلب معه باز لايتيير إلى المشهد. خوفًا من فقدان مكانته في قلب آندي، يدبر وودي مكائد ضد باز. ولكن عندما تفرق الظروف باز ووودي عن صاحبهما، يتعلم الثنائي في النهاية وضع خلافاتهما جانبًا.",
+    "description_en": "Led by Woody, Andy's toys live happily in his room until Andy's birthday brings Buzz Lightyear onto the scene. Afraid of losing his place in Andy's heart, Woody plots against Buzz. But when circumstances separate Buzz and Woody from their owner, the duo eventually learns to put aside their differences.",
+    "watch_link": "https://www.youtube.com/watch?v=KYz2wyBy3kc"
+  },
+  {
+    "id": 18785,
+    "title": "The Hangover",
+    "title_ar": "The Hangover",
+    "year": 2009,
+    "genre": [
+      "كوميديا"
+    ],
+    "rating": 7.333,
+    "poster": "https://image.tmdb.org/t/p/w500/xFnmtKrQgOZZUjI6F6Fl7vauOHu.jpg",
+    "description": "عندما يأتي ثلاثة أصدقاء أخيرًا بعد ليلة صاخبة من صخب حفلة توديع العزوبية ، يجدون طفلًا في الخزانة ونمرًا في الحمام. لكن يبدو أنهم لا يستطيعون تحديد مكان أفضل صديق لهم ، دوغ - الذي من المفترض أن يكون هو الذي يربط العقدة. يبدأ الثلاثي بحثًا محمومًا عن دوج ، ويثابر على مخلفاتهم السيئة لمحاولة الوصول إلى الكنيسة في الوقت المحدد.",
+    "description_en": "When three friends finally come to after a raucous night of bachelor-party revelry, they find a baby in the closet and a tiger in the bathroom. But they can't seem to locate their best friend, Doug – who's supposed to be tying the knot. Launching a frantic search for Doug, the trio perseveres through a nasty hangover to try to make it to the church on time.",
+    "watch_link": "https://www.youtube.com/watch?v=tlize92ffnY"
+  },
+  {
+    "id": 138843,
+    "title": "The Conjuring",
+    "title_ar": "الشعوذة",
+    "year": 2013,
+    "genre": [
+      "رعب",
+      "اثارة"
+    ],
+    "rating": 7.54,
+    "poster": "https://image.tmdb.org/t/p/w500/gDmi9udysk1OTYPgk4YG4UXRkLv.jpg",
+    "description": "تدور القصة في إطار رعب عن إيد وارين (باتريك ويلسون)، وزوجته لورين (فيرا فارميجا)، اللذين يعملان كمحققين في الخوارق الطبيعية ويحوزان على شهرة عالمية، تطلب مساعدتهما أسرة روجر (رون ليفينجستون)؛ حيث تتعرض للترهيب من قوى الظلام في مزرعة منعزلة، وبينما يضطران لمواجهة كيان شيطاني قوي، تقع عائلة وارين في أكثر الحالات رعباً في حياتهما..",
+    "description_en": "Paranormal investigators Ed and Lorraine Warren work to help a family terrorized by a dark presence in their farmhouse. Forced to confront a powerful entity, the Warrens find themselves caught in the most terrifying case of their lives.",
+    "watch_link": "https://www.youtube.com/watch?v=ejMMD0Gpg0Y"
+  },
+  {
+    "id": 150540,
+    "title": "Inside Out",
+    "title_ar": "قلباً وقالباً",
+    "year": 2015,
+    "genre": [
+      "انميشن",
+      "عائلي",
+      "مغامرة",
+      "دراما",
+      "كوميديا"
+    ],
+    "rating": 7.908,
+    "poster": "https://image.tmdb.org/t/p/w500/sCoh9F6BRsvvkYwFNNlKvIla6sQ.jpg",
+    "description": "عندما تنتقل \"رايلي\" البالغة من العمر 11 عامًا إلى مدينة جديدة، تتعاون مشاعرها الداخلية لمساعدتها على التأقلم مع التغيير. يعمل كل من \"الفرح\" و\"الخوف\" و\"الغضب\" و\"الاشمئزاز\" و\"الحزن\" معًا للحفاظ على توازنها، لكن بعد أن يضيع \"الفرح\" و\"الحزن\"، ينطلقان في رحلة عبر أماكن غريبة وغير مألوفة في محاولة للعودة إلى موطنهما داخل عقل \"رايلي\".",
+    "description_en": "When 11-year-old Riley moves to a new city, her Emotions team up to help her through the transition. Joy, Fear, Anger, Disgust and Sadness work together, but when Joy and Sadness get lost, they must journey through unfamiliar places to get back home.",
+    "watch_link": "https://www.youtube.com/watch?v=seMwpP0yeu4"
+  },
+  {
+    "id": 577922,
+    "title": "Tenet",
+    "title_ar": "عقيدة",
+    "year": 2020,
+    "genre": [
+      "اكشن",
+      "اثارة",
+      "خيال علمي"
+    ],
+    "rating": 7.175,
+    "poster": "https://image.tmdb.org/t/p/w500/iN8mhL0vSIxsTetkmE3XsJedvAv.jpg",
+    "description": "الوقت ينفد.\r مسلحا بكلمة واحدة فقط - تينيت - ويقاتل من أجل بقاء العالم بأسره ، يسافر بطل الرواية عبر عالم الشفق من التجسس الدولي في مهمة ستتكشف في شيء يتجاوز الوقت الحقيقي.",
+    "description_en": "Armed with only one word - Tenet - and fighting for the survival of the entire world, the Protagonist journeys through a twilight world of international espionage on a mission that will unfold in something beyond real time.",
+    "watch_link": "https://www.youtube.com/watch?v=L3pk_TBkihU"
+  },
+  {
+    "id": 438631,
+    "title": "Dune",
+    "title_ar": "كثيب",
+    "year": 2021,
+    "genre": [
+      "خيال علمي",
+      "مغامرة"
+    ],
+    "rating": 7.781,
+    "poster": "https://image.tmdb.org/t/p/w500/pA9WRL9j6eigtwK0majwT0lDh9G.jpg",
+    "description": "بول أتريدس ، شاب لامع وموهوب ولد لمصير عظيم يفوق إدراكه، وعليه أن يسافر إلى أخطر كوكب في الكون لضمان مستقبل عائلته وشعبه. بينما تنفجر القوى الخبيثة في صراع حول الإمداد الحصري للكوكب بأثمن مورد في الوجود - سلعة قادرة على إطلاق العنان لقدرات البشرية العليا - فقط أولئك الذين يستطيعون التغلب على خوفهم سيبقون على قيد الحياة.",
+    "description_en": "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe to ensure the future of his family and his people. As malevolent forces explode into conflict over the planet's exclusive supply of the most precious resource in existence-a commodity capable of unlocking humanity's greatest potential-only those who can conquer their fear will survive.",
+    "watch_link": "https://www.youtube.com/watch?v=8g18jFHCLXk"
+  },
+  {
+    "id": 545611,
+    "title": "Everything Everywhere All at Once",
+    "title_ar": "كل شيء في كل مكان في وقت واحد",
+    "year": 2022,
+    "genre": [
+      "اكشن",
+      "مغامرة",
+      "خيال علمي"
+    ],
+    "rating": 7.718,
+    "poster": "https://image.tmdb.org/t/p/w500/HGRePgXtUJH8MvgFRsGFMmnNHJ.jpg",
+    "description": "تتورط مهاجرة صينية مسنة في مغامرة مجنونة، حينما تكتشف أنها وحدها من يستطيع إنقاذ العالم من خلال اكتشاف العوالم الأخرى الموازية لعالمها.",
+    "description_en": "An aging Chinese immigrant is swept up in an insane adventure, where she alone can save what's important to her by connecting with the lives she could have led in other universes.",
+    "watch_link": "https://www.youtube.com/watch?v=wxN1T1uxQ2g"
+  },
+  {
+    "id": 414906,
+    "title": "The Batman",
+    "title_ar": "ذا باتمان",
+    "year": 2022,
+    "genre": [
+      "جريمة",
+      "غموض",
+      "اثارة"
+    ],
+    "rating": 7.663,
+    "poster": "https://image.tmdb.org/t/p/w500/nWFGTPx7tcHc7IC6lZF7tuM7Nst.jpg",
+    "description": "في سنته الثانية من محاربة الجريمة ، يكشف باتمان عن فساد في مدينة جوثام يتصل بعائلته بينما يواجه قاتلًا متسلسلاً يُعرف باسم ريدلر",
+    "description_en": "In his second year of fighting crime, Batman uncovers corruption in Gotham City that connects to his own family while facing a serial killer known as the Riddler.",
+    "watch_link": "https://www.youtube.com/watch?v=mqqft2x_Aa4"
+  },
+  {
+    "id": 361743,
+    "title": "Top Gun: Maverick",
+    "title_ar": "السلاح الأمثل: مافريك",
+    "year": 2022,
+    "genre": [
+      "اكشن",
+      "دراما"
+    ],
+    "rating": 8.159,
+    "poster": "https://image.tmdb.org/t/p/w500/vdf6358lwVBXZj5dUapIu0i91Hy.jpg",
+    "description": "اشعر بالحاجة ... الحاجة إلى السرعة.\r بعد أكثر من ثلاثين عاما من الخدمة كواحد من أفضل الطيارين في البحرية ، وتجنب التقدم في الرتبة الذي من شأنه أن يؤسسه ، يجد بيت \"مافريك\" ميتشل نفسه يدرب مفرزة من خريجي توب غان لمهمة متخصصة لم ير مثلها أي طيار حي من قبل",
+    "description_en": "After more than thirty years of service as one of the Navy’s top aviators, and dodging the advancement in rank that would ground him, Pete “Maverick” Mitchell finds himself training a detachment of TOP GUN graduates for a specialized mission the likes of which no living pilot has ever seen.",
+    "watch_link": "https://www.youtube.com/watch?v=giXco2jaZ_4"
+  },
+  {
+    "id": 508442,
+    "title": "Soul",
+    "title_ar": "مغامرة ذاتية",
+    "year": 2020,
+    "genre": [
+      "انميشن",
+      "عائلي",
+      "دراما",
+      "موسيقى",
+      "خيال"
+    ],
+    "rating": 8.091,
+    "poster": "https://image.tmdb.org/t/p/w500/tYdEoMovmyUnQ6DyUvtCHomVGly.jpg",
+    "description": "هل كل هذا العيش يستحق الموت حقا؟  جو غاردنر مدرس في مدرسة إعدادية يحب موسيقى الجاز. بعد تجربة ناجحة في نادي \"هاف نوت\" ، يتعرض فجأة لحادث يفصل روحه عن جسده ويتم نقله إلى ندوة أنت، وهو مركز تتطور فيه الأرواح وتكتسب العواطف قبل نقلها إلى طفل حديث الولادة. يجب على جو طلب المساعدة من النفوس الأخرى في التدريب ، مثل 22 ، وهي روح أمضت دهورا في ندوة أنت، من أجل العودة إلى الأرض.",
+    "description_en": "Joe Gardner is a middle school teacher with a love for jazz music. After a successful audition at the Half Note Club, he suddenly gets into an accident that separates his soul from his body and is transported to the You Seminar, a center in which souls develop and gain passions before being transported to a newborn child. Joe must enlist help from the other souls-in-training, like 22, a soul who has spent eons in the You Seminar, in order to get back to Earth.",
+    "watch_link": "https://www.youtube.com/watch?v=4TojlZYqPUo"
+  },
+  {
+    "id": 6977,
+    "title": "No Country for Old Men",
+    "title_ar": "لا بلد للعجائز",
+    "year": 2007,
+    "genre": [
+      "جريمة",
+      "اثارة",
+      "غرب امريكي"
+    ],
+    "rating": 7.95,
+    "poster": "https://image.tmdb.org/t/p/w500/9aIdpQ1FOcb9hSu4KOmrgN5KAfl.jpg",
+    "description": "يتعثر Llewelyn Moss على جثث الموتى ، ومليوني دولار وكنزًا من الهيروين في صحراء تكساس ، لكن القاتل المنهجي أنطون تشيجور يأتي للبحث عنه ، مع المأمور المحلي إد توم بيل في طريقه. يتلاشى دور الفريسة والحيوان بينما يتصادم السعي العنيف وراء المال والعدالة.",
+    "description_en": "Llewelyn Moss stumbles upon dead bodies, $2 million and a hoard of heroin in a Texas desert, but methodical killer Anton Chigurh comes looking for it, with local sheriff Ed Tom Bell hot on his trail. The roles of prey and predator blur as the violent pursuit of money and justice collide.",
+    "watch_link": "https://www.youtube.com/watch?v=38A__x_Ff4A"
+  },
+  {
+    "id": 671,
+    "title": "Harry Potter and the Philosopher's Stone",
+    "title_ar": "هاري بوتر وحجر الفيلسوف",
+    "year": 2001,
+    "genre": [
+      "مغامرة",
+      "خيال"
+    ],
+    "rating": 7.899,
+    "poster": "https://image.tmdb.org/t/p/w500/lzI5v4Ha8dFGqkytH022avaAvlh.jpg",
+    "description": "يلتحق صبي يتيم بمدرسة للسحر، حيث يكتشف حقيقة نفسه وعائلته والشر الرهيب الذي يطارد عالم السحر.",
+    "description_en": "Harry Potter has lived under the stairs at his aunt and uncle's house his whole life. But on his 11th birthday, he learns he's a powerful wizard—with a place waiting for him at the Hogwarts School of Witchcraft and Wizardry. As he learns to harness his newfound powers with the help of the school's kindly headmaster, Harry uncovers the truth about his parents' deaths—and about the villain who's to blame.",
+    "watch_link": "https://www.youtube.com/watch?v=VyHV0BRtdxo"
+  },
+  {
+    "id": 1891,
+    "title": "The Empire Strikes Back",
+    "title_ar": "الإمبراطورية تعيد الضربات",
+    "year": 1980,
+    "genre": [
+      "مغامرة",
+      "اكشن",
+      "خيال علمي"
+    ],
+    "rating": 8.391,
+    "poster": "https://image.tmdb.org/t/p/w500/nNAeTmF4CtdSgMDplXTDPOpYzsX.jpg",
+    "description": "بعد أن يتعرض الثوار لهجوم من قبل الإمبراطورية عند العودة لقاعدتهم، يذهب (لوك سكاي ووكر) ليأخذ تدريبات جيداي متقدمة مع المعلم (يودا)، بينما يتعرض أصدقاؤه للمطاردة باستمرار من قبل (فيدر) الذي يريد القبض على (لوك) وتحويله للجانب المظلم.",
+    "description_en": "The epic saga continues as Luke Skywalker, in hopes of defeating the evil Galactic Empire, learns the ways of the Jedi from aging master Yoda. But Darth Vader is more determined than ever to capture Luke. Meanwhile, rebel leader Princess Leia, cocky Han Solo, Chewbacca, and droids C-3PO and R2-D2 are thrown into various stages of capture, betrayal and despair.",
+    "watch_link": "https://www.youtube.com/watch?v=JNwNXF9Y6kY"
+  },
+  {
+    "id": 106646,
+    "title": "The Wolf of Wall Street",
+    "title_ar": "ذئب وول ستريت",
+    "year": 2013,
+    "genre": [
+      "جريمة",
+      "دراما",
+      "كوميديا"
+    ],
+    "rating": 8.028,
+    "poster": "https://image.tmdb.org/t/p/w500/dthIkG1QqqVZhXWnVHgLCf2KvXH.jpg",
+    "description": "يستند هذا العمل إلى القصة الحقيقية لجوردان بيلفورت، من صعوده إلى سمسار أسهم ثري يعيش حياة مترفة إلى سقوطه الذي تورط فيه بالجريمة والفساد والحكومة الفيدرالية.",
+    "description_en": "A New York stockbroker refuses to cooperate in a large securities fraud case involving corruption on Wall Street, corporate banking world and mob infiltration. Based on Jordan Belfort's autobiography.",
+    "watch_link": "https://www.youtube.com/watch?v=iszwuX1AK6A"
+  },
+  {
+    "id": 37165,
+    "title": "The Truman Show",
+    "title_ar": "عرض ترومان",
+    "year": 1998,
+    "genre": [
+      "كوميديا",
+      "دراما"
+    ],
+    "rating": 8.155,
+    "poster": "https://image.tmdb.org/t/p/w500/nRzoM8Lvjyz3jAWAWHqbiJFUptu.jpg",
+    "description": "ترومان بوربانك هو نجم برنامج ترومان شو ، وهو برنامج تلفزيوني واقعي مدته 24 ساعة في اليوم يبث كل جانب من جوانب حياته دون علمه. كانت حياته بأكملها عبارة عن مسلسل تلفزيوني لا ينتهي للاستهلاك من قبل بقية العالم. وكل شخص يعرفه ، بما في ذلك زوجته وصديقه المقرب ، هو بالفعل ممثل ، وقد دفع له ليكون جزءًا من حياته.",
+    "description_en": "In a picture-perfect seaside town, an insurance salesman begins to realize that his entire existence may be staged and observed by a vast unseen audience as part of a long-running real-time reality TV show.",
+    "watch_link": "https://www.youtube.com/watch?v=dlnmQbPGuls"
+  },
+  {
+    "id": 372058,
+    "title": "Your Name.",
+    "title_ar": "اسمك",
+    "year": 2016,
+    "genre": [
+      "انميشن",
+      "رومانسي",
+      "دراما"
+    ],
+    "rating": 8.481,
+    "poster": "https://image.tmdb.org/t/p/w500/yLglTwyFOUZt5fNKm0PWL1PK5gm.jpg",
+    "description": "يجد اثنان من الغرباء أنفسهم مرتبطين بطريقة غريبة. عندما يتشكل اتصال ، هل ستكون المسافة هي الشيء الوحيد الذي يجعلهم منفصلين؟",
+    "description_en": "High schoolers Mitsuha and Taki are complete strangers living separate lives. But one night, they suddenly switch places. Mitsuha wakes up in Taki’s body, and he in hers. This bizarre occurrence continues to happen randomly, and the two must adjust their lives around each other.",
+    "watch_link": "https://www.youtube.com/watch?v=xU47nhruN-Q"
+  }
+];
