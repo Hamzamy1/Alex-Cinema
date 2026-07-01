@@ -48,7 +48,7 @@
           </div>
           <div class="detail-genres" id="detailGenres"></div>
           <p class="detail-description" id="detailDescription"></p>
-          <button class="watch-btn" id="watchBtn" onclick="watchMovie(currentImdbId, currentItemId)" style="display:none;">
+          <button class="watch-btn" id="watchBtn" onclick="watchMovie(currentImdbId)" style="display:none;">
             <i class="fas fa-play"></i>
             <span id="watchBtnText">مشاهدة</span>
           </button>
@@ -75,25 +75,12 @@
   <!-- Player Overlay -->
   <div class="player-overlay" id="playerOverlay" style="display:none;">
     <div class="player-container">
-      <!-- Top Bar -->
       <div class="player-topbar">
-        <div class="player-topbar-left">
-          <button class="player-back" onclick="closePlayer()">
-            <i class="fas fa-arrow-right"></i> رجوع
-          </button>
-          <span class="player-title" id="playerTitle"></span>
-        </div>
-        <div class="player-topbar-right">
-          <button class="player-top-btn" onclick="closePlayer()" title="تصغير">
-            <i class="fas fa-window-minimize"></i>
-          </button>
-          <button class="player-top-btn player-top-close" onclick="closePlayer()" title="إغلاق">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+        <button class="player-back" onclick="closePlayer()">
+          <i class="fas fa-arrow-right"></i> رجوع
+        </button>
+        <span class="player-title" id="playerTitle"></span>
       </div>
-
-      <!-- Video Area -->
       <div class="player-content">
         <div class="player-intro" id="playerIntro">
           <img class="player-poster" id="playerPoster" src="" alt="">
@@ -107,55 +94,14 @@
             تخطي <i class="fas fa-forward"></i>
           </div>
         </div>
-        <div class="player-video-wrap" id="playerVideoWrap" style="display:none;">
-          <div id="playerVideoContainer"></div>
-          <!-- Loading overlay -->
-          <div class="player-loading" id="playerLoading">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>جاري التحميل...</span>
-          </div>
+        <div class="player-iframe-wrap" id="playerIframeWrap" style="display:none;">
+          <iframe id="playerIframe" allow="autoplay;fullscreen;picture-in-picture;encrypted-media" allowfullscreen></iframe>
         </div>
       </div>
-
-      <!-- Bottom Controls -->
-      <div class="player-controls" id="playerControls" style="display:none;">
-        <!-- Progress Bar -->
-        <div class="ctrl-progress-wrap">
-          <div class="ctrl-progress" id="ctrlProgress">
-            <div class="ctrl-progress-buffered" id="ctrlBuffered"></div>
-            <div class="ctrl-progress-played" id="ctrlPlayed"></div>
-            <div class="ctrl-progress-thumb" id="ctrlThumb"></div>
-            <input type="range" class="ctrl-progress-input" id="ctrlProgressInput" min="0" max="100" value="0" step="0.1">
-          </div>
-        </div>
-
-        <div class="ctrl-row">
-          <div class="ctrl-left">
-            <button class="ctrl-btn" id="ctrlPlayBtn" onclick="togglePlay()">
-              <i class="fas fa-play" id="ctrlPlayIcon"></i>
-            </button>
-            <span class="ctrl-time" id="ctrlTime">00:00 / 00:00</span>
-          </div>
-          <div class="ctrl-center">
-            <button class="ctrl-btn ctrl-skip" onclick="skipIntro()" title="تخطي المقدمة">
-              <i class="fas fa-step-forward"></i>
-            </button>
-          </div>
-          <div class="ctrl-right">
-            <button class="ctrl-btn" id="ctrlVolumeBtn" onclick="toggleMute()">
-              <i class="fas fa-volume-up" id="ctrlVolumeIcon"></i>
-            </button>
-            <div class="ctrl-volume-slider">
-              <input type="range" id="ctrlVolumeRange" min="0" max="1" step="0.05" value="1">
-            </div>
-            <button class="ctrl-btn" id="ctrlPipBtn" onclick="togglePip()" title="صورة داخل صورة">
-              <i class="fas fa-closed-captioning"></i>
-            </button>
-            <button class="ctrl-btn ctrl-fullscreen-btn" id="ctrlFullscreenBtn" onclick="toggleFullscreen()" title="ملء الشاشة">
-              <i class="fas fa-expand"></i>
-            </button>
-          </div>
-        </div>
+      <div class="player-controls">
+        <button class="player-ctrl-btn" onclick="closePlayer()"><i class="fas fa-home"></i> الرئيسية</button>
+        <button class="player-ctrl-btn" onclick="replayMovie()"><i class="fas fa-redo"></i> إعادة</button>
+        <button class="player-ctrl-btn player-ctrl-fullscreen" onclick="toggleFullscreen()"><i class="fas fa-expand"></i> ملء الشاشة</button>
       </div>
     </div>
   </div>
