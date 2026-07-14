@@ -1558,6 +1558,60 @@ body::before {
   opacity: 1;
 }
 
+/* Quality selector */
+.ctrl-quality-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ctrl-quality-menu {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20,20,30,0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 100px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  transform-origin: bottom center;
+}
+
+.ctrl-quality-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1);
+  z-index: 30;
+}
+
+.ctrl-quality-title {
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+  padding: 6px 12px 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ctrl-quality-option {
+  color: #ccc;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.ctrl-quality-option:hover {
+  background: rgba(229,9,20,0.3);
+  color: #fff;
+}
+
 /* Double-click fullscreen zone */
 .player-video-wrap .dblclick-fs {
   position: absolute;

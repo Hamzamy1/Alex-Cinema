@@ -140,6 +140,20 @@
             <button class="ctrl-btn ctrl-skip" onclick="skipIntro()" title="تخطي المقدمة">
               <i class="fas fa-step-forward"></i>
             </button>
+            <div class="ctrl-quality-wrap">
+              <button class="ctrl-btn" id="ctrlQualityBtn" onclick="toggleQualityMenu()" title="الجودة" style="display:none;">
+                <i class="fas fa-cog"></i>
+              </button>
+              <div class="ctrl-quality-menu" id="ctrlQualityMenu">
+                <div class="ctrl-quality-title">الدقة</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('hd1080')">1080p</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('hd720')">720p</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('large')">480p</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('medium')">360p</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('small')">240p</div>
+                <div class="ctrl-quality-option" onclick="setYtQuality('tiny')">144p</div>
+              </div>
+            </div>
           </div>
           <div class="ctrl-right">
             <button class="ctrl-btn" id="ctrlVolumeBtn" onclick="toggleMute()">

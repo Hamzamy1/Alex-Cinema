@@ -156,7 +156,7 @@ const server = http.createServer(async (req, res) => {
         const tmdbId = url.searchParams.get('tmdb_id');
         if (!imdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
 
-        // Check if we have a YouTube link in watchLinks
+        // 1) Check YouTube links from movies-source.json
         if (tmdbId && watchLinks[tmdbId]) {
           const watchLink = watchLinks[tmdbId];
           const ytMatch = watchLink.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -166,42 +166,57 @@ const server = http.createServer(async (req, res) => {
           }
         }
 
-        let embedUrl = '';
-        let vaplayerOk = false;
+        // 2) Known embed sources to try (ordered by reliability)
+        const sources = [
+          // vidcore – uses TMDB ID (most reliable)
+          tmdbId ? `https://player.vidcore.org/embed/movie/${tmdbId}` : null,
+          tmdbId ? `https://player.vidcore.org/embed/tv/${tmdbId}` : null,
+          // vidsrc.xyz – uses IMDb ID
+          `https://vidsrc.xyz/embed/${mediaType}/${imdbId}`,
+          // embed.su – uses IMDb ID
+          `https://embed.su/embed/${mediaType}/${imdbId}`,
+          // vidsrc.to – uses IMDb ID
+          `https://vidsrc.to/embed/${mediaType}/${imdbId}`,
+          // vidbinge – uses IMDb ID
+          `https://vidbinge.dev/embed/${mediaType}/${imdbId}`,
+        ].filter(Boolean);
 
-        // Try vaplayer first (JSON API, more reliable)
-        try {
-          const vaRes = await fetch(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' },
-            signal: AbortSignal.timeout(8000)
-          });
-          const apiData = await vaRes.json();
-          vaplayerOk = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
-        } catch {}
+        for (const src of sources) {
+          try {
+            const checkRes = await fetch(src, {
+              headers: { 'User-Agent': 'Mozilla/5.0' },
+              signal: AbortSignal.timeout(5000)
+            });
+            if (checkRes.status === 200) {
+              const text = await checkRes.text();
+              if (text.length > 200 && !text.includes('File not found') && !text.includes('Not Found') && !text.includes('broken')) {
+                sendJson(res, { ok: true, embed_url: src, type: 'embed' });
+                return;
+              }
+            }
+          } catch {}
+        }
 
-        // Try imdb.su for embed URL
+        // 3) Fallback: imdb.su – scrape embed URL
         try {
           const imdbRes = await fetch(`https://imdb.su/title/${imdbId}/`, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(6000)
           });
           if (imdbRes.status === 200) {
             const html = await imdbRes.text();
-            if (!html.includes('404') && !html.includes('Not Found')) {
-              const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
-              if (match) embedUrl = match[1];
+            if (!html.includes('404') && !html.includes('Not Found') && !html.includes('Watch Now') && !html.includes('Paste any')) {
+              const match = html.match(/src="(https?:\/\/[^"\/]+embed\/(?:movie|tv)\/[^"]+)"/);
+              if (match && !match[1].includes('imdb.su')) {
+                const found = match[1];
+                sendJson(res, { ok: true, embed_url: found, type: 'embed' });
+                return;
+              }
             }
           }
         } catch {}
 
-        const ytCheck = embedUrl.match(/(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (ytCheck) {
-          sendJson(res, { ok: true, embed_url: embedUrl, type: 'youtube', video_id: ytCheck[1] });
-        } else if (embedUrl && embedUrl.startsWith('http')) {
-          sendJson(res, { ok: true, embed_url: embedUrl, type: 'embed' });
-        } else {
-          sendJson(res, { ok: false, embed_url: '' });
-        }
+        sendJson(res, { ok: false, embed_url: '' });
       } catch (e) {
         sendJson(res, { ok: false, embed_url: '' });
       }
