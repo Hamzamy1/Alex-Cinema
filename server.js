@@ -27,9 +27,10 @@ process.on('unhandledRejection', (err) => {
 
 function tmdbFetch(apiPath) {
   return new Promise((resolve, reject) => {
+    const sep = apiPath.includes('?') ? '&' : '?';
     const opts = {
       hostname: 'api.themoviedb.org',
-      path: '/3' + apiPath + '&language=ar-SA',
+      path: '/3' + apiPath + sep + 'language=ar-SA',
       headers: {
         'Authorization': 'Bearer ' + TMDB_TOKEN,
         'Accept': 'application/json'
@@ -106,8 +107,13 @@ const server = http.createServer(async (req, res) => {
         if (!id) { sendJson(res, { error: 'no id' }); return; }
         const data = await tmdbFetch(`/${type}/${id}`);
         data.genre_names = (data.genres || []).map(g => GENRE_MAP[g.id] || g.name).filter(Boolean);
-        if (watchLinks[data.id]) data.watch_link = watchLinks[data.id];
+        if (watchLinks[data.id]) {
+          data.watch_link = watchLinks[data.id];
+          const yt = watchLinks[data.id].match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          if (yt) data.youtube_id = yt[1];
+        }
         data.media_type = type;
+        data.tmdb_id = data.id;
         sendJson(res, data);
       } catch (e) {
         sendJson(res, { error: 'not found' });
@@ -147,38 +153,81 @@ const server = http.createServer(async (req, res) => {
       try {
         const imdbId = url.searchParams.get('imdb_id');
         const mediaType = url.searchParams.get('type') || 'movie';
+        const tmdbId = url.searchParams.get('tmdb_id');
         if (!imdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        // Check if we have a YouTube link in watchLinks
+        if (tmdbId && watchLinks[tmdbId]) {
+          const watchLink = watchLinks[tmdbId];
+          const ytMatch = watchLink.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          if (ytMatch) {
+            sendJson(res, { ok: true, embed_url: watchLink, type: 'youtube', video_id: ytMatch[1] });
+            return;
+          }
+        }
 
+        let embedUrl = '';
+        let vaplayerOk = false;
+
+        // Try vaplayer first (JSON API, more reliable)
         try {
-          const [imdbRes, apiRes] = await Promise.all([
-            fetch(`https://imdb.su/title/${imdbId}/`, {
-              headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal
-            }),
-            fetch(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
-              headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' }, signal: controller.signal
-            })
-          ]);
+          const vaRes = await fetch(`https://streamdata.vaplayer.ru/api.php?imdb=${imdbId}&type=${mediaType}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://nextgencloudfabric.com/' },
+            signal: AbortSignal.timeout(8000)
+          });
+          const apiData = await vaRes.json();
+          vaplayerOk = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
+        } catch {}
 
-          clearTimeout(timeout);
-
-          let embedUrl = '';
+        // Try imdb.su for embed URL
+        try {
+          const imdbRes = await fetch(`https://imdb.su/title/${imdbId}/`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(8000)
+          });
           if (imdbRes.status === 200) {
             const html = await imdbRes.text();
-            const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
-            if (match) embedUrl = match[1];
+            if (!html.includes('404') && !html.includes('Not Found')) {
+              const match = html.match(/src="(https?:\/\/[^"]+embed\/(?:movie|tv)\/[^"]+)"/);
+              if (match) embedUrl = match[1];
+            }
           }
-          const apiData = await apiRes.json();
-          const ok = apiData.status_code === '200' && apiData.data && apiData.data.file_name;
-          sendJson(res, { ok: !!ok, embed_url: embedUrl });
-        } catch (e) {
-          clearTimeout(timeout);
+        } catch {}
+
+        const ytCheck = embedUrl.match(/(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytCheck) {
+          sendJson(res, { ok: true, embed_url: embedUrl, type: 'youtube', video_id: ytCheck[1] });
+        } else if (embedUrl) {
+          sendJson(res, { ok: true, embed_url: embedUrl, type: 'embed' });
+        } else if (vaplayerOk) {
+          sendJson(res, { ok: true, embed_url: embedUrl, type: 'embed' });
+        } else {
           sendJson(res, { ok: false, embed_url: '' });
         }
       } catch (e) {
         sendJson(res, { ok: false, embed_url: '' });
+      }
+      return;
+    }
+
+    // Proxy for masking embed URLs
+    if (p === '/api/proxy-embed') {
+      try {
+        const targetUrl = url.searchParams.get('url');
+        if (!targetUrl) { sendJson(res, { error: 'no url' }, 400); return; }
+        const response = await fetch(decodeURIComponent(targetUrl), {
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://vidsrc.to/' }
+        });
+        const contentType = response.headers.get('content-type') || 'text/html';
+        const body = await response.text();
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'X-Content-Type-Options': 'nosniff'
+        });
+        res.end(body);
+      } catch (e) {
+        sendJson(res, { error: 'proxy failed' }, 502);
       }
       return;
     }
