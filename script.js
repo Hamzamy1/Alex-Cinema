@@ -348,15 +348,34 @@ function loadVideo() {
 
 function loadYoutubePlayer(videoId, container, loading, controls) {
   ytIframe = document.createElement('iframe');
-  ytIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
+  // Enable Arabic captions via cc_load_policy=1 & hl=ar & cc_lang_pref=ar
+  ytIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&cc_load_policy=1&hl=ar&cc_lang_pref=ar`;
   ytIframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   ytIframe.allowFullscreen = true;
   container.appendChild(ytIframe);
+
+  // Show subtitle button for YouTube
+  const subBtn = document.getElementById('ctrlSubBtn');
+  if (subBtn) subBtn.style.display = 'inline-flex';
 
   let loaded = false;
   const show = () => { if (!loaded) { loaded = true; if (loading) loading.classList.remove('active'); if (controls) controls.style.opacity = '1'; } };
   ytIframe.onload = show;
   setTimeout(show, 4000);
+}
+
+function toggleYtSubtitles() {
+  if (!ytIframe || !playerVideoId) return;
+  const currentSrc = ytIframe.src;
+  const hasCC = currentSrc.includes('&cc_load_policy=1');
+  const icon = document.getElementById('ctrlSubBtn')?.querySelector('i');
+  if (hasCC) {
+    ytIframe.src = currentSrc.replace('cc_load_policy=1', 'cc_load_policy=0');
+    if (icon) icon.className = 'fas fa-closed-captioning';
+  } else {
+    ytIframe.src = currentSrc.replace('cc_load_policy=0', 'cc_load_policy=1');
+    if (icon) icon.className = 'fas fa-closed-captioning text-red';
+  }
 }
 
 function setYtQuality(quality) {
@@ -372,6 +391,8 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
+  // Sandbox prevents the embed from redirecting our page to ads
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation');
   container.appendChild(iframe);
 
   let loaded = false;
@@ -512,6 +533,8 @@ function closePlayer() {
   if (pin) pin.value = '0';
   const tim = $('ctrlTime');
   if (tim) tim.textContent = '00:00 / 00:00';
+  const sub = $('ctrlSubBtn');
+  if (sub) { sub.style.display = 'none'; const si = sub.querySelector('i'); if (si) si.className = 'fas fa-closed-captioning'; }
   if (document.fullscreenElement) document.exitFullscreen();
   playerType = '';
   playerVideoId = '';

@@ -1612,6 +1612,12 @@ body::before {
   color: #fff;
 }
 
+/* Subtitle button active state */
+#ctrlSubBtn .text-red,
+.text-red {
+  color: #e50914;
+}
+
 /* Double-click fullscreen zone */
 .player-video-wrap .dblclick-fs {
   position: absolute;

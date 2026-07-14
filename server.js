@@ -166,18 +166,21 @@ const server = http.createServer(async (req, res) => {
           }
         }
 
-        // 2) Known embed sources to try (ordered by reliability)
+        // 2) Known embed sources (cleaner ones first – support Arabic subs & no ads)
         const sources = [
-          // vidcore – uses TMDB ID (most reliable)
-          tmdbId ? `https://player.vidcore.org/embed/movie/${tmdbId}` : null,
-          tmdbId ? `https://player.vidcore.org/embed/tv/${tmdbId}` : null,
-          // vidsrc.xyz – uses IMDb ID
+          // vidsrc.wiki – TMDB ID, no ads, supports subtitles & controls=0
+          tmdbId ? `https://vidsrc.wiki/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
+          // vidsrc.fyi – TMDB/IMDB ID, no ads, supports subtitles
+          tmdbId ? `https://vidsrc.fyi/embed/${mediaType}/${tmdbId}?sub=ar` : null,
+          // vidsrc.sbs – TMDB ID, no ads, supports subtitles & controls=0
+          tmdbId ? `https://vidsrc.sbs/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
+          // vidsrc.xyz – IMDb ID
           `https://vidsrc.xyz/embed/${mediaType}/${imdbId}`,
-          // embed.su – uses IMDb ID
+          // embed.su – IMDb ID
           `https://embed.su/embed/${mediaType}/${imdbId}`,
-          // vidsrc.to – uses IMDb ID
+          // vidsrc.to – IMDb ID
           `https://vidsrc.to/embed/${mediaType}/${imdbId}`,
-          // vidbinge – uses IMDb ID
+          // vidbinge – IMDb ID
           `https://vidbinge.dev/embed/${mediaType}/${imdbId}`,
         ].filter(Boolean);
 
