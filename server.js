@@ -169,8 +169,8 @@ const server = http.createServer(async (req, res) => {
         // 2) Known embed sources (cleanest first – vaplayer has Arabic subs, no ads, full control)
         const srcId = tmdbId || imdbId;
         const sources = [
-          // vaplayer.ru (VidAPI) – best: Arabic subs, controls=false, custom colors, postMessage
-          srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}?primaryColor=%23e50914&ds_lang=ar&controls=false&autoplay=1&showTitle=false&overlay=false` : null,
+          // vaplayer.ru (VidAPI) – Arabic subs, custom colors, postMessage (controls=true for seek/quality)
+          srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null,
           // vidsrc.wiki – TMDB ID, no ads, supports subtitles & controls=0
           tmdbId ? `https://vidsrc.wiki/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
           // vidsrc.fyi – TMDB/IMDB ID, no ads, supports subtitles
