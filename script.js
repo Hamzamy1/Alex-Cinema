@@ -327,120 +327,39 @@ function loadVideo() {
 
 function loadYoutubePlayer(videoId, container, loading, controls) {
   const iframe = document.createElement('iframe');
-  iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&showinfo=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&fs=0&playsinline=1`;
+  iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   container.appendChild(iframe);
 
-  iframe.onload = () => { loading.classList.remove('active'); };
+  let loaded = false;
+  const show = () => { if (!loaded) { loaded = true; loading.classList.remove('active'); controls.style.opacity = '1'; } };
 
-  // YouTube API integration
-  let ytReady = false;
-  let ytInterval = setInterval(() => {
-    if (iframe.contentWindow && iframe.contentWindow.postMessage) {
-      iframe.contentWindow.postMessage('{"event":"listening","id":1,"channel":"cued"}', '*');
-      clearInterval(ytInterval);
-    }
-  }, 500);
+  iframe.onload = show;
 
-  window.addEventListener('message', (e) => {
-    try {
-      const data = JSON.parse(e.data);
-      if (data.event === 'onReady' && data.id === videoId) {
-        ytReady = true;
-        loading.classList.remove('active');
-        controls.style.opacity = '1';
-        setupYtControls(iframe, videoId);
-      }
-      if (data.event === 'onStateChange') {
-        if (data.info === 1) { // playing
-          ytReady = true;
-          loading.classList.remove('active');
-          controls.style.opacity = '1';
-          setupYtControls(iframe, videoId);
-        }
-      }
-      if (data.event === 'infoDelivery' && data.info && data.info.currentTime !== undefined) {
-        updateProgressUI(data.info.currentTime, data.info.duration || 1);
-      }
-    } catch (e) {}
-  }, true);
-
-  // Fallback: show controls after 3 seconds
-  setTimeout(() => {
-    loading.classList.remove('active');
-    controls.style.opacity = '1';
-  }, 3000);
-}
-
-function setupYtControls(iframe, videoId) {
-  // Update progress periodically
-  setInterval(() => {
-    if (iframe.contentWindow) {
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'getCurrentTime'
-      }), '*');
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'getDuration'
-      }), '*');
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: 'getPlayerState'
-      }), '*');
-    }
-  }, 1000);
-
-  // Control functions via postMessage
-  window.playerYtCmd = (func, args) => {
-    if (iframe.contentWindow) {
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: func,
-        args: args || []
-      }), '*');
-    }
-  };
-
-  document.getElementById('ctrlPlayBtn').onclick = () => {
-    window.playerYtCmd('getPlayerState');
-  };
-
-  document.getElementById('ctrlProgressInput').oninput = function() {
-    const dur = parseFloat(document.getElementById('ctrlTime').dataset.duration) || 1;
-    window.playerYtCmd('seekTo', [this.value / 100 * dur]);
-  };
+  setTimeout(show, 4000);
 }
 
 function loadEmbedPlayer(embedUrl, container, loading, controls) {
-  const proxyUrl = `/api/proxy-embed?url=${encodeURIComponent(embedUrl)}`;
   const iframe = document.createElement('iframe');
   iframe.src = embedUrl;
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   container.appendChild(iframe);
 
-  iframe.onload = () => {
-    loading.classList.remove('active');
-    controls.style.opacity = '1';
-  };
+  let loaded = false;
+  const show = () => { if (!loaded) { loaded = true; loading.classList.remove('active'); controls.style.opacity = '1'; } };
 
-  setTimeout(() => {
-    loading.classList.remove('active');
-    controls.style.opacity = '1';
-  }, 4000);
+  iframe.onload = show;
+
+  setTimeout(show, 8000);
 }
 
 /* ===== Player Controls ===== */
 function togglePlay() {
   const icon = document.getElementById('ctrlPlayIcon');
-  if (playerType === 'youtube' && window.playerYtCmd) {
-    window.playerYtCmd('getPlayerState');
-  } else {
-    icon.classList.toggle('fa-play');
-    icon.classList.toggle('fa-pause');
-  }
+  icon.classList.toggle('fa-play');
+  icon.classList.toggle('fa-pause');
 }
 
 function toggleMute() {
@@ -453,9 +372,6 @@ function toggleMute() {
   } else {
     range.value = range.dataset.prevVolume || 0.5;
     icon.className = range.value > 0.5 ? 'fas fa-volume-up' : range.value > 0 ? 'fas fa-volume-down' : 'fas fa-volume-mute';
-  }
-  if (playerType === 'youtube' && window.playerYtCmd) {
-    window.playerYtCmd('setVolume', [range.value * 100]);
   }
 }
 

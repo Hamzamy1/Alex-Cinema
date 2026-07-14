@@ -197,9 +197,7 @@ const server = http.createServer(async (req, res) => {
         const ytCheck = embedUrl.match(/(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
         if (ytCheck) {
           sendJson(res, { ok: true, embed_url: embedUrl, type: 'youtube', video_id: ytCheck[1] });
-        } else if (embedUrl) {
-          sendJson(res, { ok: true, embed_url: embedUrl, type: 'embed' });
-        } else if (vaplayerOk) {
+        } else if (embedUrl && embedUrl.startsWith('http')) {
           sendJson(res, { ok: true, embed_url: embedUrl, type: 'embed' });
         } else {
           sendJson(res, { ok: false, embed_url: '' });
