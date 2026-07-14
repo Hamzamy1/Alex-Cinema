@@ -391,8 +391,8 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
-  // Sandbox prevents the embed from redirecting our page to ads
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation');
+  // لو عايز ترجع منع redirect الإعلانات، فك تعليق السطر ده:
+  // iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation');
   container.appendChild(iframe);
 
   let loaded = false;
