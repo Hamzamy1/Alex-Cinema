@@ -177,14 +177,7 @@ const server = http.createServer(async (req, res) => {
           tmdbId ? `https://vidsrc.fyi/embed/${mediaType}/${tmdbId}?sub=ar` : null,
           // vidsrc.sbs – TMDB ID, no ads, supports subtitles & controls=0
           tmdbId ? `https://vidsrc.sbs/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
-          // vidsrc.xyz – IMDb ID
-          `https://vidsrc.xyz/embed/${mediaType}/${imdbId}`,
-          // embed.su – IMDb ID
-          `https://embed.su/embed/${mediaType}/${imdbId}`,
-          // vidsrc.to – IMDb ID
-          `https://vidsrc.to/embed/${mediaType}/${imdbId}`,
-          // vidbinge – IMDb ID
-          `https://vidbinge.dev/embed/${mediaType}/${imdbId}`,
+          // ملاحظة: تم حذف المصادر المليانة إعلانات (vidsrc.xyz, embed.su, vidsrc.to, vidbinge, imdb.su)
         ].filter(Boolean);
 
         for (const src of sources) {
@@ -202,25 +195,6 @@ const server = http.createServer(async (req, res) => {
             }
           } catch {}
         }
-
-        // 3) Fallback: imdb.su – scrape embed URL
-        try {
-          const imdbRes = await fetch(`https://imdb.su/title/${imdbId}/`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(6000)
-          });
-          if (imdbRes.status === 200) {
-            const html = await imdbRes.text();
-            if (!html.includes('404') && !html.includes('Not Found') && !html.includes('Watch Now') && !html.includes('Paste any')) {
-              const match = html.match(/src="(https?:\/\/[^"\/]+embed\/(?:movie|tv)\/[^"]+)"/);
-              if (match && !match[1].includes('imdb.su')) {
-                const found = match[1];
-                sendJson(res, { ok: true, embed_url: found, type: 'embed' });
-                return;
-              }
-            }
-          }
-        } catch {}
 
         sendJson(res, { ok: false, embed_url: '' });
       } catch (e) {

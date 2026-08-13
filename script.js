@@ -393,8 +393,8 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
-  // Sandbox يمنع التحويل لمواقع إعلانات أو فتح بوب أب (من غير allow-top-navigation / allow-popups)
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-forms allow-downloads');
+  // ملاحظة: مش بنستخدم sandbox هنا لأن بعض المشغلات (مثل vidsrc) بتفضل التشغيل جواه
+  // والأمان هنا إن السيرفر بيفضل المصادر النظيفة بس (بتتقال أدناه في server.js)
   container.appendChild(iframe);
 
   let loaded = false;
