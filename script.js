@@ -352,6 +352,8 @@ function loadYoutubePlayer(videoId, container, loading, controls) {
   ytIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&cc_load_policy=1&hl=ar&cc_lang_pref=ar`;
   ytIframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   ytIframe.allowFullscreen = true;
+  // Sandbox يمنع أي redirect أو بوب أب إعلاني (من غير allow-top-navigation / allow-popups)
+  ytIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-forms');
   container.appendChild(ytIframe);
 
   // Show subtitle button for YouTube
@@ -391,8 +393,8 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
-  // لو عايز ترجع منع redirect الإعلانات، فك تعليق السطر ده:
-  // iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-presentation');
+  // Sandbox يمنع التحويل لمواقع إعلانات أو فتح بوب أب (من غير allow-top-navigation / allow-popups)
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-forms allow-downloads');
   container.appendChild(iframe);
 
   let loaded = false;
