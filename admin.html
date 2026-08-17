@@ -282,7 +282,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>الوقت</th><th>الصفحة</th><th>الجهاز</th><th>المتصفح</th><th>الدولة</th><th>IP</th></tr>
+              <tr><th>الوقت</th><th>الصفحة</th><th>الجهاز</th><th>الموديل</th><th>المتصفح</th><th>الشاشة</th><th>اللغة</th><th>المنطقة الزمنية</th><th>الاتصال</th><th>الدولة</th><th>مزود الإنترنت</th><th>IP</th></tr>
             </thead>
             <tbody id="visitsBody"></tbody>
           </table>
@@ -292,7 +292,7 @@
     </section>
 
     <section class="tab-content" id="tab-devices">
-      <div class="grid2">
+      <div class="grid3">
         <div class="panel">
           <h2><i class="fas fa-mobile-alt"></i> الأجهزة</h2>
           <div id="devicesList"></div>
@@ -300,6 +300,10 @@
         <div class="panel">
           <h2><i class="fas fa-window-restore"></i> المتصفحات</h2>
           <div id="browsersList"></div>
+        </div>
+        <div class="panel">
+          <h2><i class="fas fa-microchip"></i> موديلات الأجهزة</h2>
+          <div id="modelsList"></div>
         </div>
       </div>
     </section>
@@ -375,6 +379,7 @@
       renderList('pagesList', d.pages, { icon: 'fa-film' });
       renderList('devicesList', d.devices, { icons: { 'موبايل': 'fa-mobile-alt', 'كمبيوتر': 'fa-desktop', 'تابلت': 'fa-tablet-alt' }, fallback: 'fa-laptop' });
       renderList('browsersList', d.browsers, { icons: { Chrome: 'fa-chrome', Firefox: 'fa-firefox', Safari: 'fa-safari', Edge: 'fa-edge', Opera: 'fa-opera' }, fallback: 'fa-globe' });
+      renderList('modelsList', d.models, { icon: 'fa-microchip' });
       renderList('countriesList', d.countries, { icon: 'fa-location-dot' });
       renderVisits(d.visits);
     }
@@ -415,12 +420,19 @@
         const time = new Date(v.t).toLocaleString('ar-EG');
         const devIcon = v.device === 'موبايل' ? 'fa-mobile-alt' : v.device === 'تابلت' ? 'fa-tablet-alt' : 'fa-desktop';
         const page = v.page === '/' ? 'الرئيسية' : v.page.includes('movie.html') ? '<i class="fas fa-film" style="color:#e50914;"></i> تفاصيل فيلم' : v.page;
+        const dash = '<span style="color:#444;">—</span>';
         return `<tr>
           <td>${time}</td>
           <td>${page}</td>
           <td><span class="badge-device"><i class="fas ${devIcon}"></i> ${v.device} (${v.os})</span></td>
+          <td>${v.model || dash}</td>
           <td>${v.browser}</td>
+          <td>${v.screen || dash}</td>
+          <td>${v.lang || dash}</td>
+          <td>${v.tz || dash}</td>
+          <td>${v.conn ? v.conn.toUpperCase() : dash}</td>
           <td>${v.country || '<span style="color:#666;">جارٍ التحديد...</span>'}</td>
+          <td>${v.isp || dash}</td>
           <td><span class="ip">${v.ip}</span></td>
         </tr>`;
       }).join('');
@@ -431,8 +443,10 @@
       if (!currentData) return;
       const q = this.value.toLowerCase();
       const filtered = currentData.visits.filter(v =>
-        (v.country || '').toLowerCase().includes(q) || v.ip.includes(q) ||
+        (v.country || '').toLowerCase().includes(q) || (v.isp || '').toLowerCase().includes(q) ||
+        (v.model || '').toLowerCase().includes(q) || v.ip.includes(q) ||
         v.browser.toLowerCase().includes(q) || v.device.toLowerCase().includes(q) ||
+        (v.tz || '').toLowerCase().includes(q) || (v.lang || '').toLowerCase().includes(q) ||
         (v.page || '').toLowerCase().includes(q)
       );
       renderVisits(filtered);

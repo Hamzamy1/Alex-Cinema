@@ -30,6 +30,7 @@ let stats = {
   browsers: {},
   countries: {},
   pages: {},
+  models: {},
   seenSids: {},
   ipGeo: {},
   visits: []
@@ -76,7 +77,14 @@ function parseUA(ua = '') {
   let device = 'كمبيوتر';
   if (ua.includes('ipad') || ua.includes('tablet')) device = 'تابلت';
   else if (ua.includes('mobi') || ua.includes('android') || ua.includes('iphone')) device = 'موبايل';
-  return { browser, os, device };
+  let model = '';
+  if (ua.includes('iphone')) model = 'iPhone';
+  else if (ua.includes('ipad')) model = 'iPad';
+  else {
+    const m = ua.match(/; ([^;]+?) build\//);
+    if (m) model = m[1].trim();
+  }
+  return { browser, os, device, model };
 }
 
 function getGeo(ip) {
@@ -89,14 +97,18 @@ function getGeo(ip) {
       res.on('end', () => {
         try {
           const j = JSON.parse(d);
-          const g = { country: j.country || 'غير معروف', city: j.city || '' };
+          const g = {
+            country: j.country || 'غير معروف',
+            city: j.city || '',
+            isp: (j.connection && j.connection.isp) || ''
+          };
           stats.ipGeo[ip] = g;
           geoCache.set(ip, g);
           saveStats();
           resolve(g);
-        } catch { resolve({ country: 'غير معروف', city: '' }); }
+        } catch { resolve({ country: 'غير معروف', city: '', isp: '' }); }
       });
-    }).on('error', () => resolve({ country: 'غير معروف', city: '' }));
+    }).on('error', () => resolve({ country: 'غير معروف', city: '', isp: '' }));
   });
 }
 
@@ -313,6 +325,11 @@ const server = http.createServer(async (req, res) => {
       const sid = url.searchParams.get('sid') || '';
       const page = (url.searchParams.get('page') || '/').slice(0, 300);
       const ref = (url.searchParams.get('ref') || '').slice(0, 300);
+      const screen = (url.searchParams.get('screen') || '').slice(0, 20);
+      const lang = (url.searchParams.get('lang') || '').slice(0, 20);
+      const tz = (url.searchParams.get('tz') || '').slice(0, 40);
+      const conn = (url.searchParams.get('conn') || '').slice(0, 20);
+      const ram = (url.searchParams.get('ram') || '').slice(0, 20);
       const ip = getClientIp(req);
       const now = Date.now();
 
@@ -338,15 +355,18 @@ const server = http.createServer(async (req, res) => {
         stats.totalVisitors++;
         if (Object.keys(stats.seenSids).length > 20000) stats.seenSids = {};
       }
-      stats.visits.unshift({ t: now, page, ref, ip, device: ua.device, browser: ua.browser, os: ua.os, country: '' });
+      stats.visits.unshift({ t: now, page, ref, ip, device: ua.device, browser: ua.browser, os: ua.os, model: ua.model, screen, lang, tz, conn, ram, country: '' });
       if (stats.visits.length > 1000) stats.visits.length = 1000;
+      if (ua.model && !/windows|linux|mac/i.test(ua.model)) {
+        stats.models[ua.model] = (stats.models[ua.model] || 0) + 1;
+      }
       saveStats();
 
       getGeo(ip).then(g => {
         const country = (g.country || 'غير معروف') + (g.city ? ' - ' + g.city : '');
         stats.countries[country] = (stats.countries[country] || 0) + 1;
         const entry = stats.visits.find(v => v.ip === ip && v.t === now);
-        if (entry) entry.country = country;
+        if (entry) { entry.country = country; entry.isp = g.isp; }
         saveStats();
       });
 
@@ -417,6 +437,7 @@ const server = http.createServer(async (req, res) => {
         browsers: stats.browsers || {},
         countries: stats.countries || {},
         pages: stats.pages || {},
+        models: stats.models || {},
         visits: stats.visits.slice(0, 50),
         now: Date.now()
       });

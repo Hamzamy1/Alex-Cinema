@@ -587,7 +587,12 @@ function trackPage() {
   const q = new URLSearchParams({
     sid: statsSessionId,
     page: location.pathname + location.search,
-    ref: (document.referrer || '').slice(0, 300)
+    ref: (document.referrer || '').slice(0, 300),
+    screen: (screen.width || 0) + 'x' + (screen.height || 0),
+    lang: navigator.language || '',
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    conn: (navigator.connection && navigator.connection.effectiveType) || '',
+    ram: navigator.deviceMemory ? navigator.deviceMemory + 'GB' : ''
   });
   fetch('/api/track?' + q.toString(), { keepalive: true }).catch(() => {});
 }
