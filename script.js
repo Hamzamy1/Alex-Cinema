@@ -575,6 +575,17 @@ function initScrollEffect() {
   window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 50));
 }
 
+/* ===== Site Stats (private - no display in UI) ===== */
+let statsSessionId = localStorage.getItem('alex_cinema_sid') || 's-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+localStorage.setItem('alex_cinema_sid', statsSessionId);
+
+function heartbeat() {
+  fetch(`/api/heartbeat?sid=${encodeURIComponent(statsSessionId)}`).catch(() => {});
+}
+
+heartbeat();
+setInterval(heartbeat, 20000);
+
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
   initScrollEffect();

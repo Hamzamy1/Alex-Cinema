@@ -1708,6 +1708,25 @@ body::before {
   font-size: 14px;
 }
 
+.site-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #888;
+}
+
+.site-stats span i {
+  margin-inline-end: 6px;
+  color: #e50914;
+}
+
+.site-stats b {
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Page Transition */
 .page-transition {
   position: fixed;

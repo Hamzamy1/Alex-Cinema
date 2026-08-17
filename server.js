@@ -4,7 +4,8 @@ const path = require('path');
 const https = require('https');
 
 const PORT = process.env.PORT || 3000;
-const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ODMwNjI0M2RhNGVjNjEwMmFmM2IwODZlZDY1ZTc3OCIsIm5iZiI6MTc4Mjc0MzQ4Ni45NzEsInN1YiI6IjZhNDI4MWJlN2Q0ZDJkNGI1OGY3OTI3NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.j2W2F4ZWqv4mtun4S-A_ofuC0Fp-MBwtzCwcQj88Ax4';
+const STATS_KEY = process.env.STATS_KEY || 'AQFB8n7Czu3Ns9hISObPw1kY5aXGTclv';
+const TMDB_TOKEN = process.env.TMDB_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ODMwNjI0M2RhNGVjNjEwMmFmM2IwODZlZDY1ZTc3OCIsIm5iZiI6MTc4Mjc0MzQ4Ni45NzEsInN1YiI6IjZhNDI4MWJlN2Q0ZDJkNGI1OGY3OTI3NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.j2W2F4ZWqv4mtun4S-A_ofuC0Fp-MBwtzCwcQj88Ax4';
 
 const GENRE_MAP = {
   28: 'اكشن', 12: 'مغامرة', 16: 'انمي', 35: 'كوميديا',
@@ -17,9 +18,27 @@ const GENRE_MAP = {
 
 let watchLinks = {};
 try {
-  const source = JSON.parse(fs.readFileSync('movies-source.json', 'utf8'));
+  const source = JSON.parse(fs.readFileSync(path.join(__dirname, 'movies-source.json'), 'utf8'));
   source.forEach(m => { watchLinks[m.tmdb_id] = m.watch_link; });
 } catch {}
+
+let totalVisits = 0;
+try {
+  totalVisits = Number(fs.readFileSync(path.join(__dirname, 'stats.json'), 'utf8')) || 0;
+} catch {}
+
+const activeSessions = new Map(); // sid -> lastSeen timestamp
+
+function saveStats() {
+  try { fs.writeFileSync(path.join(__dirname, 'stats.json'), String(totalVisits)); } catch {}
+}
+
+function cleanupSessions() {
+  const now = Date.now();
+  for (const [sid, last] of activeSessions) {
+    if (now - last > 60000) activeSessions.delete(sid);
+  }
+}
 
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled rejection:', err.message);
@@ -225,12 +244,32 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Stats: heartbeat + live counter
+    if (p === '/api/heartbeat') {
+      const sid = url.searchParams.get('sid') || '';
+      if (sid) activeSessions.set(sid, Date.now());
+      sendJson(res, { ok: true });
+      return;
+    }
+
+    if (p === '/api/stats') {
+      const key = url.searchParams.get('key') || '';
+      if (key !== STATS_KEY) {
+        sendJson(res, { error: 'unauthorized' }, 403);
+        return;
+      }
+      cleanupSessions();
+      sendJson(res, { visits: totalVisits, active: activeSessions.size });
+      return;
+    }
+
     // Static files
     let filePath = p === '/' ? '/index.html' : p;
     const fullPath = path.join(__dirname, filePath);
     const ext = path.extname(filePath);
     fs.readFile(fullPath, (err, data) => {
       if (err) { res.writeHead(404); res.end('File not found'); return; }
+      if (ext === '.html') { totalVisits++; saveStats(); }
       res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
       res.end(data);
     });
