@@ -583,6 +583,16 @@ function heartbeat() {
   fetch(`/api/heartbeat?sid=${encodeURIComponent(statsSessionId)}`).catch(() => {});
 }
 
+function trackPage() {
+  const q = new URLSearchParams({
+    sid: statsSessionId,
+    page: location.pathname + location.search,
+    ref: (document.referrer || '').slice(0, 300)
+  });
+  fetch('/api/track?' + q.toString(), { keepalive: true }).catch(() => {});
+}
+
+trackPage();
 heartbeat();
 setInterval(heartbeat, 20000);
 
