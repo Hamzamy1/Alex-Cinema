@@ -1,4 +1,4 @@
-const http = require('http');
+﻿const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -382,14 +382,44 @@ const server = http.createServer(async (req, res) => {
     // Admin dashboard (protected)
     if (p === '/admin') {
       const key = url.searchParams.get('key') || '';
+      res.writeHead(302, { Location: `/admin.html?key=${encodeURIComponent(key)}` });
+      res.end();
+      return;
+    }
+
+    if (p === '/api/admin') {
+      const key = url.searchParams.get('key') || '';
+      const action = url.searchParams.get('action') || '';
       if (key !== STATS_KEY) {
-        res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<!DOCTYPE html><html lang="ar" dir="rtl"><body style="background:#0f0f1a;color:#fff;font-family:Tahoma;text-align:center;padding-top:100px;"><h1>403 - ممنوع</h1><p>مفتاح غير صحيح</p></body></html>');
+        sendJson(res, { error: 'unauthorized' }, 403);
         return;
       }
       cleanupSessions();
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(renderAdmin());
+      if (action === 'clear') {
+        stats.visits = [];
+        saveStats();
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const days = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        days.push({ d: d.slice(5), v: stats.byDay[d] || 0 });
+      }
+      sendJson(res, {
+        today: stats.byDay[today] || 0,
+        yesterday: stats.byDay[yesterday] || 0,
+        views: stats.totalViews,
+        visitors: stats.totalVisitors,
+        active: activeSessions.size,
+        days,
+        devices: stats.devices || {},
+        browsers: stats.browsers || {},
+        countries: stats.countries || {},
+        pages: stats.pages || {},
+        visits: stats.visits.slice(0, 50),
+        now: Date.now()
+      });
       return;
     }
 
@@ -408,114 +438,6 @@ const server = http.createServer(async (req, res) => {
     res.end('Server error');
   }
 });
-
-function renderAdmin() {
-  const today = new Date().toISOString().slice(0, 10);
-  const todayViews = stats.byDay[today] || 0;
-  const active = activeSessions.size;
-
-  let days = [];
-  let maxDay = 1;
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-    const v = stats.byDay[d] || 0;
-    days.push({ d, v });
-    if (v > maxDay) maxDay = v;
-  }
-  const daysHtml = days.map(x => {
-    const h = Math.max(4, Math.round((x.v / maxDay) * 100));
-    return `<div class="bar-col"><div class="bar" style="height:${h}%"><span>${x.v}</span></div><div class="bar-label">${x.d.slice(5)}</div></div>`;
-  }).join('');
-
-  const listHtml = (obj, n = 6) => {
-    const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
-    if (!entries.length) return '<div class="muted">لا توجد بيانات بعد</div>';
-    return entries.map(([k, v], i) => {
-      const pct = Math.round((v / entries[0][1]) * 100);
-      return `<div class="row"><span>${k}</span><div class="bar-line"><div style="width:${pct}%"></div></div><b>${v}</b></div>`;
-    }).join('');
-  };
-
-  const visitsRows = stats.visits.slice(0, 25).map(v => {
-    const time = new Date(v.t).toLocaleString('ar-EG');
-    const pageName = v.page === '/' ? 'الرئيسية' : v.page.includes('movie.html') ? 'تفاصيل فيلم' : v.page;
-    return `<tr><td>${time}</td><td>${pageName}</td><td>${v.device} (${v.os})</td><td>${v.browser}</td><td>${v.country || 'جارٍ التحديد...'}</td><td dir="ltr">${v.ip}</td></tr>`;
-  }).join('');
-
-  return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="15">
-<title>Alex Cinema - الإحصائيات</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#0f0f1a; color:#e5e5e5; font-family:Tahoma,Arial,sans-serif; padding:24px; }
-  h1 { font-size:22px; margin-bottom:4px; }
-  .sub { color:#888; font-size:13px; margin-bottom:20px; }
-  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
-  .card { background:#1a1a2e; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:18px; }
-  .card .num { font-size:28px; font-weight:bold; color:#e50914; }
-  .card .lbl { color:#999; font-size:13px; margin-top:4px; }
-  .card .num.green { color:#4ade80; }
-  .card .num.blue { color:#60a5fa; }
-  .panel { background:#1a1a2e; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:18px; margin-bottom:24px; }
-  .panel h2 { font-size:16px; margin-bottom:14px; color:#fff; }
-  .chart { display:flex; align-items:flex-end; gap:6px; height:160px; }
-  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
-  .bar { width:70%; background:linear-gradient(180deg,#e50914,#7a0a0e); border-radius:6px 6px 0 0; min-height:4px; position:relative; }
-  .bar span { position:absolute; top:-20px; font-size:11px; color:#bbb; width:100%; text-align:center; }
-  .bar-label { font-size:10px; color:#666; margin-top:6px; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
-  @media (max-width:768px){ .grid2{ grid-template-columns:1fr; } }
-  .row { display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13px; }
-  .row span { min-width:110px; }
-  .row b { color:#fff; min-width:30px; text-align:left; }
-  .bar-line { flex:1; background:#22223a; border-radius:5px; height:8px; overflow:hidden; }
-  .bar-line div { height:100%; background:#e50914; border-radius:5px; }
-  .muted { color:#666; font-size:13px; }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th,td { padding:8px 10px; text-align:right; border-bottom:1px solid rgba(255,255,255,0.05); }
-  th { color:#999; font-weight:normal; }
-  td { color:#ddd; }
-  tr:hover td { background:rgba(229,9,20,0.05); }
-</style>
-</head>
-<body>
-  <h1>📊 إحصائيات Alex Cinema</h1>
-  <div class="sub">آخر تحديث: ${new Date().toLocaleString('ar-EG')} — يتم التحديث تلقائيًا كل 15 ثانية</div>
-
-  <div class="cards">
-    <div class="card"><div class="num">${todayViews.toLocaleString('ar-EG')}</div><div class="lbl">زيارات اليوم</div></div>
-    <div class="card"><div class="num">${stats.totalViews.toLocaleString('ar-EG')}</div><div class="lbl">إجمالي الزيارات</div></div>
-    <div class="card"><div class="num blue">${stats.totalVisitors.toLocaleString('ar-EG')}</div><div class="lbl">زوار فريدين (أجهزة)</div></div>
-    <div class="card"><div class="num green">${active.toLocaleString('ar-EG')}</div><div class="lbl">متصل الآن</div></div>
-  </div>
-
-  <div class="panel">
-    <h2>الزيارات آخر 14 يوم</h2>
-    <div class="chart">${daysHtml}</div>
-  </div>
-
-  <div class="grid2">
-    <div class="panel"><h2>الأجهزة</h2>${listHtml(stats.devices)}</div>
-    <div class="panel"><h2>المتصفحات</h2>${listHtml(stats.browsers)}</div>
-    <div class="panel"><h2>الدول</h2>${listHtml(stats.countries)}</div>
-    <div class="panel"><h2>أكثر الصفحات زيارة</h2>${listHtml(stats.pages || {})}</div>
-  </div>
-
-  <div class="panel">
-    <h2>آخر الزيارات (${Math.min(stats.visits.length, 25)})</h2>
-    <table>
-      <tr><th>الوقت</th><th>الصفحة</th><th>الجهاز</th><th>المتصفح</th><th>الدولة</th><th>IP</th></tr>
-      ${visitsRows}
-    </table>
-  </div>
-</body>
-</html>`;
-}
-
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Alex Cinema running on port ${PORT}`);
 });
