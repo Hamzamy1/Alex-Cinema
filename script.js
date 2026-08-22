@@ -515,7 +515,7 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
 function renderServerBar() {
   const bar = document.getElementById('serverBar');
   if (!bar) return;
-  if (!playerSources || playerSources.length < 2) {
+  if (playerType !== 'embed' || !playerSources || !playerSources.length) {
     bar.style.display = 'none';
     return;
   }
@@ -540,7 +540,7 @@ function switchServer(i) {
     setTimeout(() => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } }, 8000);
   }
   document.querySelectorAll('#serverBar .server-btn').forEach((b, bi) => b.classList.toggle('active', bi === i));
-  showToast('اتبدل للسيرفر ' + (i + 1));
+  showToast('اتبدل للسيرفر ' + (i + 1) + (extSubActive && !playerSources[i].url.includes('sub') ? ' (السيرفر ده مش بيدعم الترجمة الخارجية)' : ''));
 }
 
 function showQualityTip() {

@@ -1862,22 +1862,22 @@ body::before {
 }
 
 /* ===== Server switcher & quality tip ===== */
-.player-content {
-  position: relative;
-}
-
 .server-bar {
+  position: relative;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   background: #12121c;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
 }
 
 .server-label {
-  color: #888;
+  color: #999;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
@@ -1885,12 +1885,12 @@ body::before {
 }
 
 .server-btn {
-  min-width: 34px;
-  height: 30px;
+  min-width: 36px;
+  height: 32px;
   border-radius: 8px;
   background: #1d1d2e;
   color: #ccc;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
