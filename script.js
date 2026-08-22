@@ -6,8 +6,6 @@ let totalPages = 1;
 let currentImdbId = null;
 let currentMediaType = 'movie';
 let currentItemId = null;
-let currentSeason = null;
-let currentEpisode = null;
 
 const SECTION_CONFIG = {
   home:   { title: 'الرئيسية',     api: '/api/discover?type=movie&sort=popularity.desc', heroTitle: 'أهلاً بك في Alex Cinema', heroSub: 'مش هتحتار و تقول أشوف إيه... إحنا جبناهولك لحد عندك.' },
@@ -148,8 +146,6 @@ async function loadMovieDetail() {
     content.style.display = 'grid';
     currentItemId = Number(id);
     currentMediaType = type;
-    currentSeason = null;
-    currentEpisode = null;
 
     const poster = item.poster_path
       ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
@@ -207,7 +203,6 @@ async function loadMovieDetail() {
 async function loadEpisodes() {
   const seasonNum = document.getElementById('seasonSelect')?.value;
   if (!seasonNum || !currentItemId) return;
-  currentSeason = Number(seasonNum);
   const grid = document.getElementById('episodesGrid');
   if (!grid) return;
   grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</div>';
@@ -233,7 +228,6 @@ async function loadEpisodes() {
 }
 
 function watchEpisode(epNum) {
-  currentEpisode = epNum;
   document.getElementById('playerTitle').textContent = `${document.getElementById('detailTitle').textContent} - الحلقة ${epNum}`;
   watchMovie(currentImdbId, currentItemId);
 }
@@ -268,7 +262,7 @@ async function watchMovie(imdbId, tmdbId) {
   overlay.style.display = 'flex';
 
   const apiUrl = tmdbId
-    ? `/api/player-url?imdb_id=${imdbId}&type=${currentMediaType}&tmdb_id=${tmdbId}${currentMediaType === 'tv' && currentSeason ? `&season=${currentSeason}&episode=${currentEpisode || 1}` : ''}`
+    ? `/api/player-url?imdb_id=${imdbId}&type=${currentMediaType}&tmdb_id=${tmdbId}`
     : `/api/player-url?imdb_id=${imdbId}&type=${currentMediaType}`;
   const res = await fetch(apiUrl);
   const data = await res.json();
@@ -345,12 +339,6 @@ function loadVideo() {
   const qBtn = document.getElementById('ctrlQualityBtn');
   if (qBtn) qBtn.style.display = (playerType === 'youtube' && playerVideoId) ? 'inline-flex' : 'none';
 
-  const extBtn = document.getElementById('ctrlExtSubBtn');
-  if (extBtn) {
-    extBtn.style.display = playerType === 'embed' ? 'inline-flex' : 'none';
-    extBtn.classList.remove('ext-active');
-  }
-
   if (playerType === 'youtube' && playerVideoId) {
     loadYoutubePlayer(playerVideoId, container, loading, controls);
   } else {
@@ -397,82 +385,6 @@ function setYtQuality(quality) {
   let src = `https://www.youtube.com/embed/${playerVideoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
   if (quality !== 'auto') src += `&vq=${encodeURIComponent(quality)}`;
   ytIframe.src = src;
-}
-
-/* ===== External Subtitles (SubDL - manual toggle to save quota) ===== */
-let extSubActive = false;
-let extSubBusy = false;
-
-function updateExtSubBtn(active) {
-  const btn = document.getElementById('ctrlExtSubBtn');
-  if (!btn) return;
-  btn.classList.toggle('ext-active', active);
-  const icon = btn.querySelector('i');
-  if (icon && !extSubBusy) icon.className = 'fas fa-language';
-}
-
-async function toggleExternalSub() {
-  const btn = document.getElementById('ctrlExtSubBtn');
-  if (!btn || extSubBusy || playerType !== 'embed' || !isPlayerOpen) return;
-  extSubBusy = true;
-  const icon = btn.querySelector('i');
-  try {
-    if (extSubActive) {
-      extSubActive = false;
-      updateExtSubBtn(false);
-      const ok = await reloadPlayerFrame(false);
-      showToast(ok ? 'رجعت للترجمة الأساسية' : 'تعذر الرجوع للترجمة الأساسية');
-    } else {
-      if (icon) icon.className = 'fas fa-spinner fa-spin';
-      const q = new URLSearchParams({ type: currentMediaType, id: currentItemId });
-      if (currentMediaType === 'tv' && currentSeason) {
-        q.set('season', currentSeason);
-        q.set('episode', currentEpisode || 1);
-      }
-      const res = await fetch('/api/subtitle-lookup?' + q.toString());
-      const d = await res.json();
-      if (d.ok && d.url) {
-        const ok = await reloadPlayerFrame(true, d.url);
-        if (ok) {
-          extSubActive = true;
-          updateExtSubBtn(true);
-          showToast('تم تشغيل الترجمة الخارجية');
-        } else {
-          showToast('تعذر تشغيل الترجمة الخارجية');
-        }
-      } else {
-        showToast('مفيش ترجمة خارجية للعنوان ده');
-      }
-    }
-  } catch {
-    showToast('حصل خطأ، جرب تاني');
-  } finally {
-    extSubBusy = false;
-    updateExtSubBtn(extSubActive);
-  }
-}
-
-async function reloadPlayerFrame(withSub, subUrl) {
-  const api = currentItemId
-    ? `/api/player-url?imdb_id=${currentImdbId}&type=${currentMediaType}&tmdb_id=${currentItemId}${currentMediaType === 'tv' && currentSeason ? `&season=${currentSeason}&episode=${currentEpisode || 1}` : ''}`
-    : `/api/player-url?imdb_id=${currentImdbId}&type=${currentMediaType}`;
-  const url = withSub && subUrl ? api + '&sub_url=' + encodeURIComponent(subUrl) : api;
-  const d = await fetch(url).then(r => r.json());
-  if (!(d.ok && d.embed_url)) return false;
-  const iframe = document.querySelector('#playerVideoContainer iframe');
-  if (!iframe) return false;
-  iframe.src = d.embed_url;
-  return true;
-}
-
-let toastTimer = null;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
 function loadEmbedPlayer(embedUrl, container, loading, controls) {
@@ -602,7 +514,6 @@ function closePlayer() {
   isPlayerOpen = false;
   hasVideoLoaded = false;
   ytIframe = null;
-  extSubActive = false;
   const $ = id => document.getElementById(id);
   const ov = $('playerOverlay');
   if (ov) ov.style.display = 'none';
@@ -626,15 +537,6 @@ function closePlayer() {
   if (tim) tim.textContent = '00:00 / 00:00';
   const sub = $('ctrlSubBtn');
   if (sub) { sub.style.display = 'none'; const si = sub.querySelector('i'); if (si) si.className = 'fas fa-closed-captioning'; }
-  const ext = $('ctrlExtSubBtn');
-  if (ext) {
-    ext.style.display = 'none';
-    ext.classList.remove('ext-active');
-    const ei = ext.querySelector('i');
-    if (ei) ei.className = 'fas fa-language';
-  }
-  const toast = $('toast');
-  if (toast) toast.classList.remove('show');
   if (document.fullscreenElement) document.exitFullscreen();
   playerType = '';
   playerVideoId = '';

@@ -165,10 +165,6 @@
             <button class="ctrl-btn" id="ctrlSubBtn" onclick="toggleYtSubtitles()" title="الترجمة" style="display:none;">
               <i class="fas fa-closed-captioning"></i>
             </button>
-            <button class="ctrl-btn" id="ctrlExtSubBtn" onclick="toggleExternalSub()" title="ترجمة خارجية (SubDL)" style="display:none;">
-              <i class="fas fa-language"></i>
-              <span class="ext-sub-dot"></span>
-            </button>
             <button class="ctrl-btn ctrl-fullscreen-btn" id="ctrlFullscreenBtn" onclick="toggleFullscreen()" title="ملء الشاشة">
               <i class="fas fa-expand"></i>
             </button>
@@ -179,8 +175,6 @@
   </div>
 
   <audio id="errorSound" src="error.mp3" preload="auto"></audio>
-
-  <div class="toast" id="toast"></div>
 
   <!-- Unavailable modal -->
   <div class="modal-overlay" id="modalOverlay" style="display:none;">
