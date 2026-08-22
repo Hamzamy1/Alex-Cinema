@@ -114,7 +114,15 @@
             <i class="fas fa-spinner fa-spin"></i>
             <span>جاري التحميل...</span>
           </div>
+          <!-- Quality tip banner -->
+          <div class="player-tip" id="qualityTip">
+            <i class="fas fa-lightbulb"></i>
+            <span>جودة العرض بتختلف حسب السيرفر — الأفلام الجديدة ممكن تكون تصوير كاميرا سينما. لو الصورة مش حلوة بدّل السيرفر، ولو الترجمة ناقصة جرّب زرار الترجمة الخارجية</span>
+            <button onclick="hideQualityTip()" aria-label="إغلاق"><i class="fas fa-times"></i></button>
+          </div>
         </div>
+        <!-- Server switcher -->
+        <div class="server-bar" id="serverBar" style="display:none;"></div>
       </div>
 
       <!-- Bottom Controls -->
@@ -165,6 +173,10 @@
             <button class="ctrl-btn" id="ctrlSubBtn" onclick="toggleYtSubtitles()" title="الترجمة" style="display:none;">
               <i class="fas fa-closed-captioning"></i>
             </button>
+            <button class="ctrl-btn" id="ctrlExtSubBtn" onclick="toggleExternalSub()" title="ترجمة خارجية (SubDL)" style="display:none;">
+              <i class="fas fa-language"></i>
+              <span class="ext-sub-dot"></span>
+            </button>
             <button class="ctrl-btn ctrl-fullscreen-btn" id="ctrlFullscreenBtn" onclick="toggleFullscreen()" title="ملء الشاشة">
               <i class="fas fa-expand"></i>
             </button>
@@ -175,6 +187,8 @@
   </div>
 
   <audio id="errorSound" src="error.mp3" preload="auto"></audio>
+
+  <div class="toast" id="toast"></div>
 
   <!-- Unavailable modal -->
   <div class="modal-overlay" id="modalOverlay" style="display:none;">

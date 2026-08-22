@@ -1618,6 +1618,60 @@ body::before {
   color: #e50914;
 }
 
+/* External subtitle button */
+#ctrlExtSubBtn {
+  position: relative;
+  font-size: 17px;
+}
+
+.ext-sub-dot {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #555;
+  transition: all 0.2s;
+}
+
+#ctrlExtSubBtn:hover .ext-sub-dot {
+  background: #888;
+}
+
+#ctrlExtSubBtn.ext-active i {
+  color: #4ade80;
+}
+
+#ctrlExtSubBtn.ext-active .ext-sub-dot {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(18, 18, 28, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  padding: 11px 26px;
+  border-radius: 30px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 99998;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* Double-click fullscreen zone */
 .player-video-wrap .dblclick-fs {
   position: absolute;
@@ -1805,4 +1859,100 @@ body::before {
   .nav {
     gap: 15px;
   }
+}
+
+/* ===== Server switcher & quality tip ===== */
+.player-content {
+  position: relative;
+}
+
+.server-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #12121c;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.server-label {
+  color: #888;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.server-btn {
+  min-width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  background: #1d1d2e;
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.server-btn:hover {
+  border-color: #e50914;
+  color: #fff;
+}
+
+.server-btn.active {
+  background: #e50914;
+  border-color: #e50914;
+  color: #fff;
+  font-weight: bold;
+}
+
+.player-tip {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: rgba(24, 20, 6, 0.94);
+  border: 1px solid rgba(255, 200, 60, 0.35);
+  color: #ffe9a8;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, 92%);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 30;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.player-tip.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.player-tip > i {
+  color: #ffd24d;
+  flex-shrink: 0;
+}
+
+.player-tip button {
+  background: none;
+  border: none;
+  color: #caa84f;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.player-tip button:hover {
+  color: #fff;
 }

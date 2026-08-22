@@ -2,10 +2,25 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const zlib = require('zlib');
+
+// .env loader (local dev) – on Railway use dashboard variables
+try {
+  const envFile = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+  for (const line of envFile.split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+} catch {}
 
 const PORT = process.env.PORT || 3000;
-const STATS_KEY = process.env.STATS_KEY || 'AQFB8n7Czu3Ns9hISObPw1kY5aXGTclv';
-const TMDB_TOKEN = process.env.TMDB_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ODMwNjI0M2RhNGVjNjEwMmFmM2IwODZlZDY1ZTc3OCIsIm5iZiI6MTc4Mjc0MzQ4Ni45NzEsInN1YiI6IjZhNDI4MWJlN2Q0ZDJkNGI1OGY3OTI3NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.j2W2F4ZWqv4mtun4S-A_ofuC0Fp-MBwtzCwcQj88Ax4';
+const STATS_KEY = process.env.STATS_KEY;
+const TMDB_TOKEN = process.env.TMDB_TOKEN;
+const SUBDL_API_KEY = process.env.SUBDL_API_KEY || '';
+const OS_API_KEY = process.env.OS_API_KEY || '';
+
+if (!STATS_KEY) { console.error('Missing env: STATS_KEY'); process.exit(1); }
+if (!TMDB_TOKEN) { console.error('Missing env: TMDB_TOKEN'); process.exit(1); }
 
 const GENRE_MAP = {
   28: 'اكشن', 12: 'مغامرة', 16: 'انمي', 35: 'كوميديا',
@@ -116,6 +131,275 @@ function getClientIp(req) {
   return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '0.0.0.0';
 }
 
+/* ================= External Subtitles Engine ================= */
+const SUBS_DIR = path.join(__dirname, 'subs-cache');
+try { fs.mkdirSync(SUBS_DIR, { recursive: true }); } catch {}
+
+const imdbIdCache = new Map();
+const subPending = new Map();
+let subHintShown = false;
+
+function siteOrigin(req) {
+  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/+$/, '');
+  const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0];
+  const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${PORT}`;
+  return `${proto}://${host}`;
+}
+
+function fetchWithTimeout(url, opts = {}, ms = 15000) {
+  return fetch(url, { ...opts, signal: AbortSignal.timeout(ms), redirect: 'follow' });
+}
+
+async function resolveImdbId(type, tmdbId) {
+  const ck = `${type}-${tmdbId}`;
+  if (imdbIdCache.has(ck)) return imdbIdCache.get(ck);
+  try {
+    const j = await tmdbFetch(`/${type}/${tmdbId}/external_ids`);
+    const imdb = j.imdb_id || '';
+    imdbIdCache.set(ck, imdb);
+    return imdb;
+  } catch { return ''; }
+}
+
+function srtToVtt(srt) {
+  let t = srt.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  t = t.replace(/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/g, (_, h, m, s, ms) =>
+    `${h.padStart(2, '0')}:${m}:${s}.${ms.padEnd(3, '0')}`);
+  return 'WEBVTT\n\n' + t.trim() + '\n';
+}
+
+function assTime(t) {
+  const m = String(t).trim().match(/^(\d+):(\d{1,2}):(\d{1,2})[.,](\d{1,3})$/);
+  if (!m) return '00:00:00.000';
+  return `${m[1].padStart(2, '0')}:${m[2].padStart(2, '0')}:${m[3].padStart(2, '0')}.${m[4].padEnd(3, '0')}`;
+}
+
+function assToVtt(text) {
+  const out = ['WEBVTT', ''];
+  let n = 0;
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.startsWith('Dialogue:')) continue;
+    const parts = line.slice(9).split(',');
+    if (parts.length < 10) continue;
+    const start = assTime(parts[1]);
+    const end = assTime(parts[2]);
+    let txt = parts.slice(9).join(',')
+      .replace(/\{[^}]*\}/g, '')
+      .replace(/\\N/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    if (!txt) continue;
+    out.push(String(++n), `${start} --> ${end}`, txt, '');
+  }
+  return out.join('\n') + '\n';
+}
+
+function unzipFirstSubtitle(buf) {
+  try {
+    const sig = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+    let pos = 0;
+    while (true) {
+      const idx = buf.indexOf(sig, pos);
+      if (idx < 0) return null;
+      const method = buf.readUInt16LE(idx + 8);
+      const compSize = buf.readUInt32LE(idx + 18);
+      const nameLen = buf.readUInt16LE(idx + 26);
+      const extraLen = buf.readUInt16LE(idx + 28);
+      const name = buf.slice(idx + 30, idx + 30 + nameLen).toString('utf8');
+      const dataStart = idx + 30 + nameLen + extraLen;
+      if (/\.(srt|vtt)$/i.test(name)) {
+        const raw = buf.slice(dataStart, compSize > 0 ? dataStart + compSize : buf.length);
+        const data = method === 0 ? raw : zlib.inflateRawSync(raw);
+        return smartDecode(data);
+      }
+      pos = dataStart + Math.max(compSize, 1);
+    }
+  } catch { return null; }
+}
+
+function subScore(c, season, episode) {
+  let sc = 0;
+  if (c.format === 'srt') sc -= 10;
+  else if (c.format === 'vtt') sc -= 8;
+  else if (c.format === 'ass' || c.format === 'ssa') sc += 5;
+  if (season != null && Number(c.season) === Number(season)) sc -= 3;
+  else if (season != null && Number(c.season) > 0) sc += 20;
+  if (episode != null && Number(c.episode) === Number(episode)) sc -= 2;
+  else if (episode != null && Number(c.episode) > 0 && Number(c.episode) !== Number(episode)) sc += 15;
+  return sc;
+}
+
+async function findSubdl(imdbId, tmdbId, type, season, episode) {
+  const p = new URLSearchParams({ type, languages: 'ar' });
+  if (imdbId) p.set('imdb_id', imdbId); else p.set('tmdb_id', tmdbId);
+  if (type === 'tv') {
+    if (season != null) p.set('season_number', season);
+    if (episode != null) p.set('episode_number', episode);
+  }
+  const r = await fetchWithTimeout('https://api.subdl.com/api/v2/subtitles/search?' + p.toString(), {
+    headers: { 'Authorization': 'Bearer ' + SUBDL_API_KEY, 'Accept': 'application/json' }
+  }, 10000);
+  if (!r.ok) throw new Error('subdl http ' + r.status);
+  const j = await r.json();
+  const candidates = [];
+  for (const s of (j.subtitles || [])) {
+    const files = Array.isArray(s.unpack_files) && s.unpack_files.length ? s.unpack_files : [s];
+    for (const f of files) {
+      const u = f.url || s.url;
+      if (!u) continue;
+      const fmtMatch = String(f.format || (u.match(/\.(\w{3})(\?|$)/) || [])[1] || '').toLowerCase();
+      candidates.push({
+        url: u,
+        format: fmtMatch,
+        season: f.season !== undefined ? f.season : s.season,
+        episode: f.episode !== undefined ? f.episode : s.episode
+      });
+    }
+  }
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => subScore(a, season, episode) - subScore(b, season, episode));
+  const best = candidates[0];
+  return { download_link: /^https?:/i.test(best.url) ? best.url : 'https://api.subdl.com' + best.url };
+}
+
+async function findOpenSubtitles(imdbId, type, season, episode) {
+  const headers = { 'Api-Key': OS_API_KEY, 'User-Agent': 'AlexCinema v1.0', 'Accept': 'application/json' };
+  const p = new URLSearchParams({ languages: 'ar', type });
+  if (imdbId) p.set('imdb_id', String(imdbId).replace(/^tt/, ''));
+  if (type === 'tv') {
+    if (season != null) p.set('season_number', season);
+    if (episode != null) p.set('episode_number', episode);
+  }
+  const r1 = await fetchWithTimeout('https://api.opensubtitles.com/api/v1/subtitles?' + p.toString(), { headers }, 10000);
+  if (!r1.ok) throw new Error('os http ' + r1.status);
+  const j1 = await r1.json();
+  const items = ((j1.data || []).map(d => d.attributes) || [])
+    .filter(a => a.files && a.files.length)
+    .sort((a, b) => (b.ratings || 0) - (a.ratings || 0) || (a.ai_translated ? 1 : 0) - (b.ai_translated ? 1 : 0));
+  if (!items.length) return null;
+  const fileId = items[0].files[0].file_id;
+  const r2 = await fetchWithTimeout('https://api.opensubtitles.com/api/v1/download', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_id: fileId })
+  }, 10000);
+  if (!r2.ok) throw new Error('os dl http ' + r2.status);
+  const j2 = await r2.json();
+  return j2.link ? { download_link: j2.link } : null;
+}
+
+function smartDecode(buf) {
+  if (buf.length > 2 && buf[0] === 0xFF && buf[1] === 0xFE) return new TextDecoder('utf-16le').decode(buf.slice(2));
+  if (buf.length > 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) return new TextDecoder('utf-8').decode(buf.slice(3));
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch {
+    try { return new TextDecoder('windows-1256').decode(buf); }
+    catch { return buf.toString('latin1'); }
+  }
+}
+
+async function downloadSubtitleContent(sub) {
+  let link = sub.download_link;
+  if (!/^https?:/i.test(link)) link = 'https://dl.subdl.com' + (link.startsWith('/') ? '' : '/') + link;
+  const r = await fetchWithTimeout(link, { headers: { 'User-Agent': 'Mozilla/5.0' } }, 20000);
+  if (!r.ok) throw new Error('sub dl http ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.slice(0, 2).toString() === 'PK') {
+    const inner = unzipFirstSubtitle(buf);
+    if (!inner) throw new Error('zip has no subtitle');
+    return inner;
+  }
+  return smartDecode(buf);
+}
+
+function subKey(type, id, season, episode) {
+  return `${type}-${id}` + (type === 'tv' ? `-s${season}-e${episode}` : '') + '-ar';
+}
+
+async function buildVtt(type, id, season, episode) {
+  const imdbId = await resolveImdbId(type, id);
+  let sub = null, searched = false;
+  if (SUBDL_API_KEY) { try { sub = await findSubdl(imdbId, id, type, season, episode); searched = true; } catch {} }
+  if (!sub && OS_API_KEY) { try { sub = await findOpenSubtitles(imdbId, type, season, episode); searched = true; } catch {} }
+  if (!sub) return searched ? null : undefined;
+  const text = await downloadSubtitleContent(sub);
+  if (/\[Events\]/i.test(text) || /^\s*\[Script Info\]/im.test(text)) return assToVtt(text);
+  return srtToVtt(text);
+}
+
+async function ensureExternalSubtitle(req, type, id, season, episode) {
+  if (!SUBDL_API_KEY && !OS_API_KEY) {
+    if (!subHintShown) {
+      subHintShown = true;
+      console.log('Info: set SUBDL_API_KEY or OS_API_KEY env to enable external Arabic subtitles');
+    }
+    return null;
+  }
+  if (!id) return null;
+  const key = subKey(type, id, season, episode);
+  const vttPath = path.join(SUBS_DIR, key + '.vtt');
+
+  if (fs.existsSync(vttPath)) {
+    try {
+      if (fs.readFileSync(vttPath, 'utf8').length > 50) return `${siteOrigin(req)}/api/subtitle/${key}.vtt`;
+    } catch {}
+  }
+
+  const negPath = path.join(SUBS_DIR, key + '.miss');
+  try {
+    if (fs.existsSync(negPath) && Date.now() - fs.statSync(negPath).mtimeMs < 24 * 3600 * 1000) return null;
+  } catch {}
+
+  if (subPending.has(key)) {
+    const ok = await subPending.get(key).catch(() => false);
+    return ok ? `${siteOrigin(req)}/api/subtitle/${key}.vtt` : null;
+  }
+
+  console.log('Subtitle lookup (consumes quota):', key);
+  const job = buildVtt(type, id, season, episode)
+    .then(vtt => {
+      if (vtt && vtt.length > 50) {
+        fs.writeFileSync(vttPath, vtt);
+        console.log('Subtitle cached:', key);
+        return true;
+      }
+      if (vtt === null) fs.writeFileSync(negPath, '');
+      return false;
+    });
+  subPending.set(key, job);
+  const ok = await job.finally(() => subPending.delete(key)).catch(() => false);
+  return ok ? `${siteOrigin(req)}/api/subtitle/${key}.vtt` : null;
+}
+
+/* ================= End Subtitles Engine ================= */
+
+function buildEmbedSources(mediaType, srcId, season, episode, subUrl) {
+  const enc = encodeURIComponent;
+  const isTv = mediaType === 'tv';
+  const epPath = isTv ? `/${season}/${episode}` : '';
+  const list = [];
+  const label = enc('عربي');
+
+  if (subUrl) {
+    // Sources that support injecting OUR subtitle file
+    list.push({ name: 'vidlink', url: `https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true` });
+    list.push({ name: 'vidsrc.cc', url: `https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}` });
+    list.push({ name: 'vidsrc.me', url: isTv
+      ? `https://vidsrc-embed.ru/embed/tv?tmdb=${srcId}&season=${season}&episode=${episode}&sub_url=${enc(subUrl)}&autoplay=1`
+      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1` });
+    list.push({ name: 'yapgrid', url: `https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1` });
+  }
+
+  // Fallbacks with built-in provider subs
+  list.push(
+    { name: 'vaplayer', url: srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null },
+    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? `https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null },
+    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? `https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null }
+  );
+
+  return list.filter(s => s.url);
+}
+
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled rejection:', err.message);
 });
@@ -161,7 +445,7 @@ const MIME = {
 };
 
 function sendJson(res, data, status = 200) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
   res.end(JSON.stringify(data));
 }
 
@@ -249,7 +533,7 @@ const server = http.createServer(async (req, res) => {
         const imdbId = url.searchParams.get('imdb_id');
         const mediaType = url.searchParams.get('type') || 'movie';
         const tmdbId = url.searchParams.get('tmdb_id');
-        if (!imdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
+        if (!imdbId && !tmdbId) { sendJson(res, { ok: false, embed_url: '' }); return; }
 
         // 1) Check YouTube links from movies-source.json
         if (tmdbId && watchLinks[tmdbId]) {
@@ -261,40 +545,80 @@ const server = http.createServer(async (req, res) => {
           }
         }
 
-        // 2) Known embed sources (cleanest first – vaplayer has Arabic subs, no ads, full control)
-        const srcId = tmdbId || imdbId;
-        const sources = [
-          // vaplayer.ru (VidAPI) – Arabic subs, custom colors, postMessage (controls=true for seek/quality)
-          srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null,
-          // vidsrc.wiki – TMDB ID, no ads, supports subtitles & controls=0
-          tmdbId ? `https://vidsrc.wiki/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
-          // vidsrc.fyi – TMDB/IMDB ID, no ads, supports subtitles
-          tmdbId ? `https://vidsrc.fyi/embed/${mediaType}/${tmdbId}?sub=ar` : null,
-          // vidsrc.sbs – TMDB ID, no ads, supports subtitles & controls=0
-          tmdbId ? `https://vidsrc.sbs/embed/${mediaType}/${tmdbId}?sub=ar&controls=0&autoplay=1` : null,
-          // ملاحظة: تم حذف المصادر المليانة إعلانات (vidsrc.xyz, embed.su, vidsrc.to, vidbinge, imdb.su)
-        ].filter(Boolean);
+        let season = null, episode = null;
+        if (mediaType === 'tv') {
+          season = parseInt(url.searchParams.get('season')) || 1;
+          episode = parseInt(url.searchParams.get('episode')) || 1;
+        }
 
-        for (const src of sources) {
+        // External sub only when the client explicitly asks for it (saves SubDL quota)
+        const subUrl = url.searchParams.get('sub_url') || null;
+        // Check ALL candidate sources in parallel – return every healthy one
+        // (lets the user switch servers when quality is bad)
+        const sources = buildEmbedSources(mediaType, tmdbId || imdbId, season, episode, subUrl);
+        const checked = await Promise.all(sources.map(async src => {
           try {
-            const checkRes = await fetch(src, {
+            const checkRes = await fetch(src.url, {
               headers: { 'User-Agent': 'Mozilla/5.0' },
               signal: AbortSignal.timeout(5000)
             });
-            if (checkRes.status === 200) {
-              const text = await checkRes.text();
-              if (text.length > 200 && !text.includes('File not found') && !text.includes('Not Found') && !text.includes('broken')) {
-                sendJson(res, { ok: true, embed_url: src, type: 'embed' });
-                return;
-              }
-            }
-          } catch {}
-        }
+            if (checkRes.status !== 200) return null;
+            const text = await checkRes.text();
+            if (text.length > 200 && !text.includes('File not found') && !text.includes('Not Found') && !text.includes('broken')) return src;
+            return null;
+          } catch { return null; }
+        }));
+        const healthy = checked.filter(Boolean);
 
-        sendJson(res, { ok: false, embed_url: '' });
+        if (healthy.length) {
+          sendJson(res, {
+            ok: true,
+            embed_url: healthy[0].url,
+            type: 'embed',
+            source: healthy[0].name,
+            sources: healthy.map((s, i) => ({ name: 'سيرفر ' + (i + 1), provider: s.name, url: s.url }))
+          });
+        } else {
+          sendJson(res, { ok: false, embed_url: '' });
+        }
       } catch (e) {
         sendJson(res, { ok: false, embed_url: '' });
       }
+      return;
+    }
+
+    // On-demand external Arabic subtitle lookup – called only when user clicks the button
+    if (p === '/api/subtitle-lookup') {
+      const mediaType = url.searchParams.get('type') || 'movie';
+      const id = url.searchParams.get('id');
+      if (!id) { sendJson(res, { ok: false }); return; }
+      let season = null, episode = null;
+      if (mediaType === 'tv') {
+        season = parseInt(url.searchParams.get('season')) || 1;
+        episode = parseInt(url.searchParams.get('episode')) || 1;
+      }
+      try {
+        const subUrl = await ensureExternalSubtitle(req, mediaType, id, season, episode);
+        sendJson(res, { ok: !!subUrl, url: subUrl || '' });
+      } catch {
+        sendJson(res, { ok: false, url: '' });
+      }
+      return;
+    }
+
+    // Serve cached external subtitles as WebVTT (CORS open – embed players fetch it)
+    const subRoute = p.match(/^\/api\/subtitle\/((?:movie|tv)-[\w.-]+)\.vtt$/);
+    if (subRoute) {
+      const fp = path.join(SUBS_DIR, subRoute[1] + '.vtt');
+      fs.readFile(fp, (err, data) => {
+        if (err) { res.writeHead(404, { 'Access-Control-Allow-Origin': '*' }); res.end('not found'); return; }
+        res.writeHead(200, {
+          'Content-Type': 'text/vtt; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=86400'
+        });
+        res.end(data);
+      });
       return;
     }
 
