@@ -318,11 +318,13 @@ const KARAOKE_LINES = [
   'ولو الترجمة ناقصة، جرّب زرار الترجمة الخارجية.. وبس كده.. مشاهدة سعيدة!'
 ];
 let karaokeThresholds = [];
+let karaokeDuration = 0;
 let tipVoiceShown = false;
 
 function buildKaraoke(duration) {
   const box = document.getElementById('karaokeBox');
   if (!box || !duration || !isFinite(duration) || duration <= 0) return;
+  karaokeDuration = duration;
   const weights = KARAOKE_LINES.map(l => l.length + 6);
   const total = weights.reduce((a, b) => a + b, 0);
   let acc = 0;
@@ -330,14 +332,11 @@ function buildKaraoke(duration) {
   box.innerHTML = KARAOKE_LINES.map(l => `<span>${l}</span>`).join('');
 }
 
-function updateKaraoke(t) {
+function updateKaraoke(t, total) {
   const box = document.getElementById('karaokeBox');
   if (!box) return;
-  if (!karaokeThresholds.length) {
-    const a = document.getElementById('tipVoice');
-    if (a && a.duration && isFinite(a.duration)) buildKaraoke(a.duration);
-    if (!karaokeThresholds.length) return;
-  }
+  if (!karaokeThresholds.length) buildKaraoke(total || 34);
+  if (!karaokeThresholds.length) return;
   let idx = 0;
   for (let i = 0; i < karaokeThresholds.length; i++) {
     if (t >= karaokeThresholds[i]) idx = i;
@@ -351,25 +350,21 @@ function clearKaraoke() {
   if (box) box.innerHTML = '';
 }
 
-function onTipVoiceMeta(snd) {
-  const raw = snd.duration;
-  const dur = (raw && isFinite(raw) && raw > 0) ? raw : 34;
-  const d = Math.ceil(dur);
-  if (d > playerCount) {
-    playerCount = d + 1;
-    const c = document.getElementById('playerCountdown');
-    if (c) c.textContent = playerCount;
-  }
-  buildKaraoke(dur);
-}
-
 function playTipVoice() {
   const snd = document.getElementById('tipVoice');
   if (!snd || tipVoiceShown) return;
   snd.volume = 1;
-  if (snd.readyState >= 1 && snd.duration && isFinite(snd.duration)) onTipVoiceMeta(snd);
-  else snd.addEventListener('loadedmetadata', () => onTipVoiceMeta(snd), { once: true });
-  snd.addEventListener('timeupdate', () => updateKaraoke(snd.currentTime));
+  let dur = (snd.duration && isFinite(snd.duration) && snd.duration > 0) ? snd.duration : 0;
+  buildKaraoke(dur || 34);
+  if (!dur) {
+    snd.addEventListener('loadedmetadata', function () {
+      if (snd.duration && isFinite(snd.duration) && snd.duration > 0 && Math.abs(snd.duration - karaokeDuration) > 1.5) {
+        buildKaraoke(snd.duration);
+      }
+    }, { once: true });
+  }
+  const eff = function () { return karaokeDuration || 34; };
+  snd.addEventListener('timeupdate', function () { updateKaraoke(snd.currentTime, eff()); });
   snd.play().then(() => {
     tipVoiceShown = true;
   }).catch(() => {});
