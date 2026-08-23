@@ -632,13 +632,21 @@ function renderServerBar() {
 function switchServer(i) {
   if (!hasVideoLoaded || i === currentSourceIdx || !playerSources[i]) return;
   currentSourceIdx = i;
-  const iframe = document.querySelector('#playerVideoContainer iframe');
+  const container = document.getElementById('playerVideoContainer');
   const loading = document.getElementById('playerLoading');
-  if (iframe && playerSources[i].url) {
+  const oldFrame = container ? container.querySelector('iframe') : null;
+  if (oldFrame && playerSources[i].url) {
     if (loading) loading.classList.add('active');
-    iframe.src = playerSources[i].url;
+    // بنبني إطار جديد نضيف بدل ما نغيّر رابط القديم — بعض المشغلات
+    // (زي vidsrc/cinesrc) بتبوظ لو الإطار فيه حالة من مشغل تاني قبله
+    const fresh = document.createElement('iframe');
+    fresh.src = playerSources[i].url;
+    fresh.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
+    fresh.allowFullscreen = true;
+    fresh.setAttribute('loading', 'lazy');
+    oldFrame.replaceWith(fresh);
     let done = false;
-    iframe.onload = () => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } };
+    fresh.onload = () => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } };
     setTimeout(() => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } }, 8000);
   }
   document.querySelectorAll('#serverBar .server-btn').forEach((b, bi) => b.classList.toggle('active', bi === i));
