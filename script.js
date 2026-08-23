@@ -305,7 +305,76 @@ async function watchMovie(imdbId, tmdbId) {
   }
 }
 
+const KARAOKE_LINES = [
+  'لو الفيلم جديد، بنجيبهولك تصوير سينما من تاني يوم في السينما.',
+  'وبعد حوالي 10 أيام بنجيب نسخة HD أصلي حتى لو لسه بيتعرض في السينما.',
+  'إحنا الأسرع.. مفيش حد بيسبقنا ولا بينزّل الفيلم قبلنا.',
+  'ولو لقيت تصوير سينما على سيرفر معيّن بعد الـ 10 أيام دول، بدّل لسيرفر تاني —',
+  'يمكن الـ HD نزل هناك ولسه مسمعتش عنه على الأولاني، أو العكس.',
+  'المهم تبدّل بين السيرفرات لحد ما تلاقي الـ HD.',
+  'ولو الترجمة ناقصة، جرّب زرار الترجمة الخارجية.. وبس كده.. مشاهدة سعيدة!'
+];
+let karaokeThresholds = [];
+let tipVoiceShown = false;
+
+function buildKaraoke(duration) {
+  const box = document.getElementById('karaokeBox');
+  if (!box || !duration || !isFinite(duration) || duration <= 0) return;
+  const weights = KARAOKE_LINES.map(l => l.length + 6);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  karaokeThresholds = weights.map(w => { const s = (acc / total) * duration; acc += w; return s; });
+  box.innerHTML = KARAOKE_LINES.map(l => `<span>${l}</span>`).join('');
+}
+
+function updateKaraoke(t) {
+  const box = document.getElementById('karaokeBox');
+  if (!box || !karaokeThresholds.length) return;
+  let idx = 0;
+  for (let i = 0; i < karaokeThresholds.length; i++) {
+    if (t >= karaokeThresholds[i]) idx = i;
+  }
+  box.querySelectorAll('span').forEach((s, i) => s.classList.toggle('k-active', i === idx));
+}
+
+function clearKaraoke() {
+  karaokeThresholds = [];
+  const box = document.getElementById('karaokeBox');
+  if (box) box.innerHTML = '';
+}
+
+function onTipVoiceMeta(snd) {
+  const d = Math.ceil(snd.duration || 0);
+  if (d > playerCount) {
+    playerCount = d + 1;
+    const c = document.getElementById('playerCountdown');
+    if (c) c.textContent = playerCount;
+  }
+  buildKaraoke(snd.duration);
+}
+
+function playTipVoice() {
+  try { if (sessionStorage.getItem('alex_tip_voice')) return; } catch { return; }
+  const snd = document.getElementById('tipVoice');
+  if (!snd) return;
+  snd.volume = 1;
+  if (snd.readyState >= 1) onTipVoiceMeta(snd);
+  else snd.addEventListener('loadedmetadata', () => onTipVoiceMeta(snd), { once: true });
+  snd.addEventListener('timeupdate', () => updateKaraoke(snd.currentTime));
+  snd.play().then(() => {
+    tipVoiceShown = true;
+    try { sessionStorage.setItem('alex_tip_voice', '1'); } catch {}
+  }).catch(() => {});
+}
+
+function stopTipVoice() {
+  const snd = document.getElementById('tipVoice');
+  if (snd && !snd.paused) { snd.pause(); snd.currentTime = 0; }
+  clearKaraoke();
+}
+
 function startCountdown() {
+  playTipVoice();
   const intro = document.getElementById('playerIntro');
   const wrap = document.getElementById('playerVideoWrap');
   const countEl = document.getElementById('playerCountdown');
@@ -336,6 +405,7 @@ function skipIntro() {
 function loadVideo() {
   if (!playerEmbedUrl || hasVideoLoaded) return;
   hasVideoLoaded = true;
+  stopTipVoice();
   const intro = document.getElementById('playerIntro');
   const wrap = document.getElementById('playerVideoWrap');
   const container = document.getElementById('playerVideoContainer');
@@ -360,7 +430,7 @@ function loadVideo() {
 
   if (playerType === 'embed') {
     renderServerBar();
-    showQualityTip();
+    if (!tipVoiceShown) showQualityTip();
   } else {
     const bar = document.getElementById('serverBar');
     if (bar) bar.style.display = 'none';
@@ -548,7 +618,7 @@ function showQualityTip() {
   if (!tip) return;
   tip.classList.add('show');
   clearTimeout(tipTimer);
-  tipTimer = setTimeout(hideQualityTip, 10000);
+  tipTimer = setTimeout(hideQualityTip, 16000);
 }
 
 function hideQualityTip() {
@@ -665,6 +735,8 @@ function toggleFullscreen() {
 
 function closePlayer() {
   clearInterval(playerTimer);
+  stopTipVoice();
+  tipVoiceShown = false;
   isPlayerOpen = false;
   hasVideoLoaded = false;
   ytIframe = null;

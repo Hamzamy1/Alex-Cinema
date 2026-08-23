@@ -102,6 +102,7 @@
             <h2 id="playerMovieTitle"></h2>
             <div class="player-countdown" id="playerCountdown">10</div>
             <p>سيبدأ بعد...</p>
+            <div class="karaoke" id="karaokeBox"></div>
           </div>
           <div class="player-skip" onclick="skipIntro()">
             تخطي <i class="fas fa-forward"></i>
@@ -117,7 +118,7 @@
           <!-- Quality tip banner -->
           <div class="player-tip" id="qualityTip">
             <i class="fas fa-lightbulb"></i>
-            <span>جودة العرض بتختلف حسب السيرفر — الأفلام الجديدة ممكن تكون تصوير كاميرا سينما. لو الصورة مش حلوة بدّل السيرفر، ولو الترجمة ناقصة جرّب زرار الترجمة الخارجية</span>
+            <span>فيلم جديد؟ بنجيبهولك تصوير سينما من تاني يوم في السينما، وبعد حوالي 10 أيام بنجيب نسخة HD أصلي حتى لو لسه بيتعرض — مفيش حد بيسبقنا. لو لقيت تصوير سينما على سيرفر معيّن بعد الـ 10 أيام دول بدّل لسيرفر تاني — يمكن الـ HD نزل هناك ولسه مسمعتش عنه على الأولاني، أو العكس — المهم تبدّل بين السيرفرات لحد ما تلاقي الـ HD. ولو الترجمة ناقصة جرّب زرار الترجمة الخارجية.. وبس كده، مشاهدة سعيدة</span>
             <button onclick="hideQualityTip()" aria-label="إغلاق"><i class="fas fa-times"></i></button>
           </div>
         </div>
@@ -188,6 +189,7 @@
   </div>
 
   <audio id="errorSound" src="error.mp3" preload="auto"></audio>
+  <audio id="tipVoice" src="quality-tip.mp3" preload="auto"></audio>
 
   <div class="toast" id="toast"></div>
 
