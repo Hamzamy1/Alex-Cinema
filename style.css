@@ -2124,59 +2124,6 @@ select:focus-visible {
   box-shadow: 0 0 12px rgba(229, 9, 20, 0.9);
 }
 
-.hero-orbs {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hero-orbs span {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.32;
-  will-change: transform;
-  animation: orbDrift 16s ease-in-out infinite;
-}
-
-.hero-orbs span:nth-child(1) {
-  width: 360px;
-  height: 360px;
-  background: #e50914;
-  top: -100px;
-  right: -80px;
-}
-
-.hero-orbs span:nth-child(2) {
-  width: 300px;
-  height: 300px;
-  background: #ff4d5a;
-  bottom: -140px;
-  left: -60px;
-  opacity: 0.26;
-  animation-delay: -6s;
-  animation-duration: 19s;
-}
-
-.hero-orbs span:nth-child(3) {
-  width: 240px;
-  height: 240px;
-  background: #6d28d9;
-  top: 30%;
-  left: 38%;
-  opacity: 0.2;
-  animation-delay: -11s;
-  animation-duration: 23s;
-}
-
-@keyframes orbDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(50px, -36px) scale(1.18); }
-  66% { transform: translate(-40px, 30px) scale(0.88); }
-}
-
 .hero-content h1 {
   animation: riseIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both, gradientShift 4s ease-in-out infinite;
 }
@@ -2671,4 +2618,126 @@ body::before {
 @keyframes arrowBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
+}
+
+/* ===== Living Night Sky ===== */
+
+#starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sf-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.sf-layer.a {
+  animation: sfDriftA 140s ease-in-out infinite alternate;
+}
+
+.sf-layer.b {
+  animation: sfDriftB 100s ease-in-out infinite alternate;
+}
+
+.sf-layer.c {
+  animation: sfDriftC 120s ease-in-out infinite alternate;
+}
+
+.sf-band {
+  position: absolute;
+  top: 36%;
+  left: -70%;
+  width: 240%;
+  height: 30%;
+  transform: rotate(-28deg);
+  pointer-events: none;
+}
+
+.sf-haze {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  background: radial-gradient(closest-side, rgba(205, 215, 255, 0.055), rgba(150, 165, 230, 0.02) 55%, transparent 78%);
+}
+
+.sf-star.lg {
+  box-shadow: 0 0 7px 1px rgba(255, 255, 255, 0.30);
+}
+
+@keyframes sfDriftA {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-4%, 3%, 0); }
+}
+
+@keyframes sfDriftB {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(3%, -4%, 0); }
+}
+
+.sf-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  opacity: var(--o, 0.35);
+  animation: sfTwinkle var(--tdur, 4s) ease-in-out var(--tdelay, 0s) infinite;
+}
+
+@keyframes sfTwinkle {
+  0%, 100% { opacity: var(--o, 0.35); transform: scale(1); }
+  50% { opacity: calc(var(--o, 0.35) * 0.15); transform: scale(0.7); }
+}
+
+.sf-shooter {
+  position: absolute;
+  width: var(--len, 130px);
+  height: 1px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.65), transparent);
+  opacity: 0;
+  animation: shoot var(--sdur, 11s) ease-in var(--sdelay, 5s) infinite;
+}
+
+@keyframes shoot {
+  0%, 84% { opacity: 0; transform: rotate(var(--ang, -30deg)) translate3d(0, 0, 0); }
+  87% { opacity: var(--peak, 0.85); }
+  96%, 100% { opacity: 0; transform: rotate(var(--ang, -30deg)) translate3d(-58vw, 0, 0); }
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: -140px;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  animation: grainShift 0.9s steps(1) infinite;
+}
+
+@keyframes grainShift {
+  0% { transform: translate3d(0, 0, 0); }
+  12.5% { transform: translate3d(-46px, 28px, 0); }
+  25% { transform: translate3d(30px, -52px, 0); }
+  37.5% { transform: translate3d(-64px, -20px, 0); }
+  50% { transform: translate3d(52px, 44px, 0); }
+  62.5% { transform: translate3d(-24px, -60px, 0); }
+  75% { transform: translate3d(60px, 12px, 0); }
+  87.5% { transform: translate3d(-38px, 54px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@media (max-width: 768px) {
+  .sf-layer.b,
+  .sf-layer.c {
+    display: none;
+  }
+
+  body::after {
+    opacity: 0.04;
+  }
 }

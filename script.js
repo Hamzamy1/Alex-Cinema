@@ -982,15 +982,19 @@ function replayAnim(el) {
 }
 
 function initUiPolish() {
+  initStarfield();
+
   const docEl = document.documentElement;
   const prog = document.getElementById('scrollProgress');
   const toTop = document.getElementById('toTopBtn');
+  const field = document.getElementById('starfield');
 
   const onScroll = () => {
     const y = window.scrollY || docEl.scrollTop || document.body.scrollTop || 0;
     const max = Math.max(1, docEl.scrollHeight - docEl.clientHeight);
     if (prog) prog.style.transform = `scaleX(${Math.min(1, y / max)})`;
     if (toTop) toTop.classList.toggle('show', y > 420);
+    if (field) field.style.transform = `translate3d(0, ${(y * -0.06).toFixed(1)}px, 0)`;
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
@@ -1050,4 +1054,100 @@ function initCardTilt() {
       card.style.setProperty('--ry', '0deg');
     }
   });
+}
+
+function initStarfield() {
+  if (document.getElementById('starfield')) return;
+  const field = document.createElement('div');
+  field.id = 'starfield';
+
+  const gauss = () => (Math.random() + Math.random() + Math.random()) / 1.5 - 1;
+
+  [['a', 34, 1], ['b', 22, 0.65]].forEach(([cls, count, dim]) => {
+    const layer = document.createElement('div');
+    layer.className = 'sf-layer ' + cls;
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('span');
+      s.className = 'sf-star';
+      s.style.width = s.style.height = (Math.random() * 1.6 + 0.8).toFixed(1) + 'px';
+      s.style.left = (Math.random() * 100).toFixed(2) + '%';
+      s.style.top = (Math.random() * 100).toFixed(2) + '%';
+      s.style.setProperty('--o', (0.12 + Math.random() * 0.38 * dim).toFixed(2));
+      s.style.setProperty('--tdur', (2.5 + Math.random() * 5).toFixed(1) + 's');
+      s.style.setProperty('--tdelay', (-Math.random() * 7).toFixed(1) + 's');
+      layer.appendChild(s);
+    }
+    field.appendChild(layer);
+  });
+
+  const layerC = document.createElement('div');
+  layerC.className = 'sf-layer c';
+  const band = document.createElement('div');
+  band.className = 'sf-band';
+
+  for (let i = 0; i < 3; i++) {
+    const hz = document.createElement('span');
+    hz.className = 'sf-haze';
+    const size = Math.round(26 + Math.random() * 10);
+    hz.style.width = hz.style.height = size + 'vmax';
+    hz.style.left = (10 + i * 34 + Math.random() * 8).toFixed(1) + '%';
+    hz.style.top = (32 + gauss() * 16).toFixed(1) + '%';
+    band.appendChild(hz);
+  }
+
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement('span');
+    s.className = 'sf-star';
+    s.style.width = s.style.height = (Math.random() * 0.9 + 0.5).toFixed(1) + 'px';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top = (50 + gauss() * 24).toFixed(1) + '%';
+    s.style.setProperty('--o', (0.06 + Math.random() * 0.22).toFixed(2));
+    s.style.setProperty('--tdur', (3 + Math.random() * 6).toFixed(1) + 's');
+    s.style.setProperty('--tdelay', (-Math.random() * 9).toFixed(1) + 's');
+    band.appendChild(s);
+  }
+  layerC.appendChild(band);
+
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('span');
+    s.className = 'sf-star lg';
+    s.style.width = s.style.height = (2.4 + Math.random() * 1.2).toFixed(1) + 'px';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top = (Math.random() * 100).toFixed(2) + '%';
+    s.style.setProperty('--o', (0.45 + Math.random() * 0.35).toFixed(2));
+    s.style.setProperty('--tdur', (4 + Math.random() * 5).toFixed(1) + 's');
+    s.style.setProperty('--tdelay', (-Math.random() * 9).toFixed(1) + 's');
+    layerC.appendChild(s);
+  }
+  field.appendChild(layerC);
+
+  const makeShooter = () => {
+    const sh = document.createElement('span');
+    sh.className = 'sf-shooter';
+    sh.style.left = (8 + Math.random() * 78).toFixed(1) + '%';
+    sh.style.top = (3 + Math.random() * 42).toFixed(1) + '%';
+    sh.style.setProperty('--ang', (-16 - Math.random() * 34).toFixed(0) + 'deg');
+    sh.style.setProperty('--len', Math.round(80 + Math.random() * 90) + 'px');
+    sh.style.setProperty('--peak', (0.55 + Math.random() * 0.35).toFixed(2));
+    return sh;
+  };
+
+  const applyTiming = (sh, dur, delay) => {
+    sh.style.setProperty('--sdur', dur.toFixed(1) + 's');
+    sh.style.setProperty('--sdelay', delay.toFixed(1) + 's');
+  };
+
+  for (let i = 0; i < 14; i++) {
+    const sh = makeShooter();
+    applyTiming(sh, 8, -(i * 0.61 + Math.random() * 0.15));
+    field.appendChild(sh);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const sh = makeShooter();
+    applyTiming(sh, 9.5 + Math.random() * 3.5, -Math.random() * 13);
+    field.appendChild(sh);
+  }
+
+  document.body.prepend(field);
 }
