@@ -32,6 +32,14 @@ const GENRE_MAP = {
 };
 
 let watchLinks = {};
+
+// Short-TTL cache for /api/player-url results (avoids re-running health checks
+// for the same item on every open). Failures are cached briefly too.
+const playerUrlCache = new Map();
+const PLAYER_URL_TTL_MS = 120000;
+function playerUrlCacheKey(type, id, season, episode, subUrl) {
+  return [type, id, season || '', episode || '', subUrl || ''].join('|');
+}
 try {
   const source = JSON.parse(fs.readFileSync(path.join(__dirname, 'movies-source.json'), 'utf8'));
   source.forEach(m => { watchLinks[m.tmdb_id] = m.watch_link; });
@@ -553,6 +561,14 @@ const server = http.createServer(async (req, res) => {
 
         // External sub only when the client explicitly asks for it (saves SubDL quota)
         const subUrl = url.searchParams.get('sub_url') || null;
+
+        const cacheKey = playerUrlCacheKey(mediaType, tmdbId || imdbId, season, episode, subUrl);
+        const cached = playerUrlCache.get(cacheKey);
+        if (cached && (Date.now() - cached.ts) < PLAYER_URL_TTL_MS) {
+          sendJson(res, cached.data);
+          return;
+        }
+
         // Check ALL candidate sources in parallel – return every healthy one
         // (lets the user switch servers when quality is bad)
         const sources = buildEmbedSources(mediaType, tmdbId || imdbId, season, episode, subUrl);
@@ -571,15 +587,19 @@ const server = http.createServer(async (req, res) => {
         const healthy = checked.filter(Boolean);
 
         if (healthy.length) {
-          sendJson(res, {
+          const data = {
             ok: true,
             embed_url: healthy[0].url,
             type: 'embed',
             source: healthy[0].name,
             sources: healthy.map((s, i) => ({ name: 'سيرفر ' + (i + 1), provider: s.name, url: s.url }))
-          });
+          };
+          playerUrlCache.set(cacheKey, { ts: Date.now(), data });
+          sendJson(res, data);
         } else {
-          sendJson(res, { ok: false, embed_url: '' });
+          const data = { ok: false, embed_url: '' };
+          playerUrlCache.set(cacheKey, { ts: Date.now(), data });
+          sendJson(res, data);
         }
       } catch (e) {
         sendJson(res, { ok: false, embed_url: '' });

@@ -415,10 +415,6 @@ function startVoiceSequence() {
   const wrap = document.getElementById('playerVideoWrap');
   intro.style.display = 'flex';
   wrap.style.display = 'none';
-  const cd = document.getElementById('playerCountdown');
-  const lbl = document.getElementById('playerCountLabel');
-  if (cd) cd.style.display = 'none';
-  if (lbl) lbl.style.display = 'none';
   clearInterval(playerTimer);
   const snd = document.getElementById('tipVoice');
   if (snd && !snd.paused && !snd.ended) {
@@ -432,7 +428,8 @@ function startVoiceSequence() {
 }
 
 function skipIntro() {
-  if (!playerEmbedUrl || hasVideoLoaded) return;
+  if (!isPlayerOpen || hasVideoLoaded) return;
+  if (!playerEmbedUrl) { stopTipVoice(); return; }
   clearInterval(playerTimer);
   loadVideo();
 }
@@ -787,10 +784,6 @@ function closePlayer() {
   if (i) i.style.display = 'flex';
   const w = $('playerVideoWrap');
   if (w) w.style.display = 'none';
-  const cdEl = $('playerCountdown');
-  if (cdEl) cdEl.style.display = '';
-  const lblEl = $('playerCountLabel');
-  if (lblEl) lblEl.style.display = '';
   hideQualityTip();
   const sb = $('serverBar');
   if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; }
