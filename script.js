@@ -319,35 +319,68 @@ const KARAOKE_LINES = [
 ];
 let karaokeThresholds = [];
 let karaokeDuration = 0;
+let karaokeRaf = null;
 let tipVoiceShown = false;
 
 function buildKaraoke(duration) {
   const box = document.getElementById('karaokeBox');
-  if (!box || !duration || !isFinite(duration) || duration <= 0) return;
+  const lines = document.getElementById('karaokeLines');
+  if (!box || !lines || !duration || !isFinite(duration) || duration <= 0) return;
   karaokeDuration = duration;
   const weights = KARAOKE_LINES.map(l => l.length + 6);
   const total = weights.reduce((a, b) => a + b, 0);
   let acc = 0;
   karaokeThresholds = weights.map(w => { const s = (acc / total) * duration; acc += w; return s; });
-  box.innerHTML = KARAOKE_LINES.map(l => `<span>${l}</span>`).join('');
+  lines.innerHTML = KARAOKE_LINES.map(() =>
+    '<div class="k-line k-future"><span class="k-text"></span><span class="k-caret"></span></div>'
+  ).join('');
+  box.classList.add('on');
 }
 
-function updateKaraoke(t, total) {
-  const box = document.getElementById('karaokeBox');
-  if (!box) return;
-  if (!karaokeThresholds.length) buildKaraoke(total || 34);
-  if (!karaokeThresholds.length) return;
-  let idx = 0;
-  for (let i = 0; i < karaokeThresholds.length; i++) {
-    if (t >= karaokeThresholds[i]) idx = i;
+function tickKaraoke() {
+  const snd = document.getElementById('tipVoice');
+  const els = document.querySelectorAll('#karaokeLines .k-line');
+  if (!snd || !els.length || !karaokeThresholds.length) { karaokeRaf = null; return; }
+  const t = snd.currentTime || 0;
+  for (let i = 0; i < els.length; i++) {
+    const el = els[i];
+    const txt = KARAOKE_LINES[i];
+    const textEl = el.querySelector('.k-text');
+    const start = karaokeThresholds[i];
+    const end = (i + 1 < karaokeThresholds.length) ? karaokeThresholds[i + 1] : karaokeDuration;
+    if (t >= end) {
+      if (textEl.textContent.length !== txt.length) {
+        el.classList.remove('k-now', 'k-future');
+        el.classList.add('k-done');
+        textEl.textContent = txt;
+      }
+    } else if (t >= start) {
+      const p = (end > start) ? (t - start) / (end - start) : 1;
+      const n = Math.min(txt.length, Math.floor(p * txt.length));
+      if (!el.classList.contains('k-now')) {
+        el.classList.remove('k-future', 'k-done');
+        el.classList.add('k-now');
+      }
+      if (textEl.textContent.length !== n) textEl.textContent = txt.slice(0, n);
+    } else if (textEl.textContent) {
+      textEl.textContent = '';
+      el.classList.add('k-future');
+    }
   }
-  box.querySelectorAll('span').forEach((s, i) => s.classList.toggle('k-active', i === idx));
+  if (!snd.paused && !snd.ended && typeof isPlayerOpen !== 'undefined' && isPlayerOpen) {
+    karaokeRaf = requestAnimationFrame(tickKaraoke);
+  } else {
+    karaokeRaf = null;
+  }
 }
 
 function clearKaraoke() {
+  if (karaokeRaf) { cancelAnimationFrame(karaokeRaf); karaokeRaf = null; }
   karaokeThresholds = [];
   const box = document.getElementById('karaokeBox');
-  if (box) box.innerHTML = '';
+  if (box) box.classList.remove('on');
+  const lines = document.getElementById('karaokeLines');
+  if (lines) lines.innerHTML = '';
 }
 
 function playTipVoice() {
@@ -360,13 +393,13 @@ function playTipVoice() {
     snd.addEventListener('loadedmetadata', function () {
       if (snd.duration && isFinite(snd.duration) && snd.duration > 0 && Math.abs(snd.duration - karaokeDuration) > 1.5) {
         buildKaraoke(snd.duration);
+        if (!snd.paused && karaokeRaf === null) karaokeRaf = requestAnimationFrame(tickKaraoke);
       }
     }, { once: true });
   }
-  const eff = function () { return karaokeDuration || 34; };
-  snd.addEventListener('timeupdate', function () { updateKaraoke(snd.currentTime, eff()); });
   snd.play().then(() => {
     tipVoiceShown = true;
+    if (karaokeRaf === null) karaokeRaf = requestAnimationFrame(tickKaraoke);
   }).catch(() => {});
 }
 

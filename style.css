@@ -1957,26 +1957,116 @@ body::before {
   color: #fff;
 }
 
-/* Karaoke caption (intro screen, synced with tip voice) */
+/* ===== Karaoke typewriter panel (intro screen, synced with tip voice) ===== */
 .karaoke {
-  margin-top: 16px;
-  max-width: 620px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-top: 18px;
+  max-width: 640px;
+  padding: 16px 22px 18px;
+  background: rgba(8, 8, 12, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.45), 0 0 45px rgba(229, 9, 20, 0.12), inset 0 0 40px rgba(229, 9, 20, 0.04);
   text-align: center;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) scale(0.97);
 }
 
-.karaoke span {
+.karaoke.on {
+  animation: kPanelIn 0.6s cubic-bezier(0.21, 1.02, 0.55, 1) forwards;
+}
+
+@keyframes kPanelIn {
+  to {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.k-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: rgba(255, 120, 126, 0.85);
+  margin-bottom: 10px;
+}
+
+.k-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e50914;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.9);
+  animation: kPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes kPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.55; }
+}
+
+.k-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.k-line {
   font-size: 15px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.32);
-  transition: color 0.35s ease, text-shadow 0.35s ease, transform 0.35s ease;
+  line-height: 1.85;
+  min-height: 1.85em;
+  transition: color 0.4s ease, opacity 0.4s ease, text-shadow 0.4s ease;
 }
 
-.karaoke span.k-active {
+.k-line.k-future {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.k-line.k-done {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.k-line.k-now {
   color: #fff;
-  transform: scale(1.03);
-  text-shadow: 0 0 16px rgba(229, 9, 20, 0.85);
+  text-shadow: 0 0 18px rgba(229, 9, 20, 0.75);
+}
+
+.k-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  background: #e50914;
+  margin-inline-start: 3px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.95);
+  animation: kBlink 0.75s steps(1) infinite;
+}
+
+.k-line:not(.k-now) .k-caret {
+  display: none;
+}
+
+@keyframes kBlink {
+  50% { opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  .karaoke {
+    padding: 12px 14px 14px;
+    max-width: 100%;
+  }
+
+  .k-line {
+    font-size: 13px;
+  }
 }
