@@ -248,6 +248,7 @@ function closeModal() {
 
 /* ===== Professional Player ===== */
 let playerTimer = null;
+let pendingVoiceEnd = null;
 let playerCount = 10;
 let playerEmbedUrl = '';
 let playerType = '';
@@ -296,10 +297,11 @@ async function watchMovie(imdbId, tmdbId) {
         ctrls.style.display = 'none';
       }
     }
-    startCountdown();
+    startVoiceSequence();
   } else {
     overlay.style.display = 'none';
     isPlayerOpen = false;
+    stopTipVoice();
     document.getElementById('modalOverlay').style.display = 'flex';
     const snd = document.getElementById('errorSound');
     if (snd) { snd.currentTime = 0; snd.play().catch(() => {}); }
@@ -330,7 +332,12 @@ function buildKaraoke(duration) {
 
 function updateKaraoke(t) {
   const box = document.getElementById('karaokeBox');
-  if (!box || !karaokeThresholds.length) return;
+  if (!box) return;
+  if (!karaokeThresholds.length) {
+    const a = document.getElementById('tipVoice');
+    if (a && a.duration && isFinite(a.duration)) buildKaraoke(a.duration);
+    if (!karaokeThresholds.length) return;
+  }
   let idx = 0;
   for (let i = 0; i < karaokeThresholds.length; i++) {
     if (t >= karaokeThresholds[i]) idx = i;
@@ -345,13 +352,15 @@ function clearKaraoke() {
 }
 
 function onTipVoiceMeta(snd) {
-  const d = Math.ceil(snd.duration || 0);
+  const raw = snd.duration;
+  const dur = (raw && isFinite(raw) && raw > 0) ? raw : 34;
+  const d = Math.ceil(dur);
   if (d > playerCount) {
     playerCount = d + 1;
     const c = document.getElementById('playerCountdown');
     if (c) c.textContent = playerCount;
   }
-  buildKaraoke(snd.duration);
+  buildKaraoke(dur);
 }
 
 function playTipVoice() {
@@ -369,31 +378,29 @@ function playTipVoice() {
 function stopTipVoice() {
   const snd = document.getElementById('tipVoice');
   if (snd && !snd.paused) { snd.pause(); snd.currentTime = 0; }
+  pendingVoiceEnd = null;
   clearKaraoke();
 }
 
-function startCountdown() {
+function startVoiceSequence() {
   const intro = document.getElementById('playerIntro');
   const wrap = document.getElementById('playerVideoWrap');
-  const countEl = document.getElementById('playerCountdown');
   intro.style.display = 'flex';
   wrap.style.display = 'none';
-  const snd = document.getElementById('tipVoice');
-  const rem = (snd && !snd.paused && snd.duration && isFinite(snd.duration)) ? Math.ceil(snd.duration - snd.currentTime) : 0;
-  playerCount = Math.max(10, rem + 2);
-  countEl.textContent = playerCount;
+  const cd = document.getElementById('playerCountdown');
+  const lbl = document.getElementById('playerCountLabel');
+  if (cd) cd.style.display = 'none';
+  if (lbl) lbl.style.display = 'none';
   clearInterval(playerTimer);
-  playerTimer = setInterval(() => {
-    playerCount--;
-    countEl.textContent = playerCount;
-    countEl.classList.remove('pulse');
-    void countEl.offsetWidth;
-    countEl.classList.add('pulse');
-    if (playerCount <= 0) {
-      clearInterval(playerTimer);
-      loadVideo();
-    }
-  }, 1000);
+  const snd = document.getElementById('tipVoice');
+  if (snd && !snd.paused && !snd.ended) {
+    pendingVoiceEnd = function () { pendingVoiceEnd = null; loadVideo(); };
+    snd.addEventListener('ended', function () {
+      if (pendingVoiceEnd) { var f = pendingVoiceEnd; pendingVoiceEnd = null; f(); }
+    }, { once: true });
+  } else {
+    loadVideo();
+  }
 }
 
 function skipIntro() {
@@ -752,6 +759,10 @@ function closePlayer() {
   if (i) i.style.display = 'flex';
   const w = $('playerVideoWrap');
   if (w) w.style.display = 'none';
+  const cdEl = $('playerCountdown');
+  if (cdEl) cdEl.style.display = '';
+  const lblEl = $('playerCountLabel');
+  if (lblEl) lblEl.style.display = '';
   hideQualityTip();
   const sb = $('serverBar');
   if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; }
