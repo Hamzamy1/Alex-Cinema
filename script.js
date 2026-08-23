@@ -269,6 +269,7 @@ async function watchMovie(imdbId, tmdbId) {
   document.getElementById('playerMovieTitle').textContent = title;
   document.getElementById('playerPoster').src = poster;
   overlay.style.display = 'flex';
+  playTipVoice();
 
   const apiUrl = tmdbId
     ? `/api/player-url?imdb_id=${imdbId}&type=${currentMediaType}&tmdb_id=${tmdbId}${currentMediaType === 'tv' && currentSeason ? `&season=${currentSeason}&episode=${currentEpisode || 1}` : ''}`
@@ -354,16 +355,14 @@ function onTipVoiceMeta(snd) {
 }
 
 function playTipVoice() {
-  try { if (sessionStorage.getItem('alex_tip_voice')) return; } catch { return; }
   const snd = document.getElementById('tipVoice');
-  if (!snd) return;
+  if (!snd || tipVoiceShown) return;
   snd.volume = 1;
-  if (snd.readyState >= 1) onTipVoiceMeta(snd);
+  if (snd.readyState >= 1 && snd.duration && isFinite(snd.duration)) onTipVoiceMeta(snd);
   else snd.addEventListener('loadedmetadata', () => onTipVoiceMeta(snd), { once: true });
   snd.addEventListener('timeupdate', () => updateKaraoke(snd.currentTime));
   snd.play().then(() => {
     tipVoiceShown = true;
-    try { sessionStorage.setItem('alex_tip_voice', '1'); } catch {}
   }).catch(() => {});
 }
 
@@ -374,13 +373,14 @@ function stopTipVoice() {
 }
 
 function startCountdown() {
-  playTipVoice();
   const intro = document.getElementById('playerIntro');
   const wrap = document.getElementById('playerVideoWrap');
   const countEl = document.getElementById('playerCountdown');
   intro.style.display = 'flex';
   wrap.style.display = 'none';
-  playerCount = 10;
+  const snd = document.getElementById('tipVoice');
+  const rem = (snd && !snd.paused && snd.duration && isFinite(snd.duration)) ? Math.ceil(snd.duration - snd.currentTime) : 0;
+  playerCount = Math.max(10, rem + 2);
   countEl.textContent = playerCount;
   clearInterval(playerTimer);
   playerTimer = setInterval(() => {
