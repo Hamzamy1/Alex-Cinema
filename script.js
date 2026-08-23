@@ -33,9 +33,9 @@ async function loadMovies() {
   if (loading) loading.style.display = 'block';
 
   const cfg = SECTION_CONFIG[currentSection] || SECTION_CONFIG.home;
-  if (sectionTitle) sectionTitle.textContent = cfg.title;
-  if (heroTitle) heroTitle.textContent = cfg.heroTitle;
-  if (heroSub) heroSub.textContent = cfg.heroSub;
+  if (sectionTitle) { sectionTitle.textContent = cfg.title; replayAnim(sectionTitle); }
+  if (heroTitle) { heroTitle.textContent = cfg.heroTitle; replayAnim(heroTitle); }
+  if (heroSub) { heroSub.textContent = cfg.heroSub; replayAnim(heroSub); }
 
   if (grid) {
     grid.innerHTML = '<div class="skeleton-grid">' + Array(10).fill(0).map(() =>
@@ -74,7 +74,7 @@ function renderMovies(items) {
   const grid = document.getElementById('moviesGrid');
   const totalCount = document.getElementById('totalCount');
   if (!grid) return;
-  if (totalCount) totalCount.textContent = `${items.length} عنوان`;
+  if (totalCount) animateCount(totalCount, items.length);
 
   if (items.length === 0) {
     grid.innerHTML = '<div class="no-results"><i class="fas fa-search"></i><h3>لا توجد نتائج</h3><p>حاول بكلمات بحث مختلفة</p></div>';
@@ -106,6 +106,7 @@ function renderMovies(items) {
           </div>
           <div class="card-badges">${typeLabel}${badge}</div>
         </div>
+        <span class="card-glare"></span>
       </div>
     `;
   }).join('');
@@ -886,6 +887,8 @@ setInterval(heartbeat, 20000);
 document.addEventListener('DOMContentLoaded', () => {
   initScrollEffect();
   initPlayerUI();
+  initUiPolish();
+  initCardTilt();
   const isDetailPage = window.location.pathname.includes('movie.html');
 
   if (isDetailPage) { loadMovieDetail(); return; }
@@ -952,3 +955,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadMovies();
 });
+
+/* ===== UI polish: count-up, replay animations, ripple, scroll progress ===== */
+function animateCount(el, to) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !isFinite(to) || to <= 0) { el.textContent = `${to} عنوان`; return; }
+  const dur = 700;
+  const t0 = performance.now();
+  const step = t => {
+    const k = Math.min(1, (t - t0) / dur);
+    el.textContent = `${Math.round(to * (1 - Math.pow(1 - k, 3)))} عنوان`;
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function replayAnim(el) {
+  if (!el) return;
+  el.classList.remove('anim-swap');
+  void el.offsetWidth;
+  el.classList.add('anim-swap');
+  el.addEventListener('animationend', function h() {
+    el.classList.remove('anim-swap');
+    el.removeEventListener('animationend', h);
+  });
+}
+
+function initUiPolish() {
+  const docEl = document.documentElement;
+  const prog = document.getElementById('scrollProgress');
+  const toTop = document.getElementById('toTopBtn');
+
+  const onScroll = () => {
+    const y = window.scrollY || docEl.scrollTop || document.body.scrollTop || 0;
+    const max = Math.max(1, docEl.scrollHeight - docEl.clientHeight);
+    if (prog) prog.style.transform = `scaleX(${Math.min(1, y / max)})`;
+    if (toTop) toTop.classList.toggle('show', y > 420);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  if (toTop) toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn,.watch-btn,.page-btn,.modal-btn,.server-btn,.back-btn,.player-back');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.15;
+    const ink = document.createElement('span');
+    ink.className = 'ripple-ink';
+    ink.style.width = ink.style.height = size + 'px';
+    ink.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ink.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    btn.appendChild(ink);
+    setTimeout(() => ink.remove(), 700);
+  });
+}
+
+function initCardTilt() {
+  const grid = document.getElementById('moviesGrid');
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+  if (!grid || reduce || !finePointer) return;
+
+  let raf = null;
+  let pending = null;
+
+  const apply = () => {
+    raf = null;
+    const p = pending;
+    pending = null;
+    if (!p || !p.card || !p.card.isConnected) return;
+    const rect = p.card.getBoundingClientRect();
+    const px = (p.x - rect.left) / rect.width;
+    const py = (p.y - rect.top) / rect.height;
+    p.card.style.setProperty('--ry', ((px - 0.5) * 10).toFixed(2) + 'deg');
+    p.card.style.setProperty('--rx', ((0.5 - py) * 8).toFixed(2) + 'deg');
+    p.card.style.setProperty('--gx', (px * 100).toFixed(1) + '%');
+    p.card.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
+  };
+
+  grid.addEventListener('mousemove', e => {
+    const card = e.target.closest('.movie-card');
+    if (!card) return;
+    pending = { card, x: e.clientX, y: e.clientY };
+    if (raf === null) raf = requestAnimationFrame(apply);
+  }, { passive: true });
+
+  grid.addEventListener('mouseout', e => {
+    const card = e.target.closest('.movie-card');
+    if (card && !(e.relatedTarget && card.contains(e.relatedTarget))) {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+    }
+  });
+}
