@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/admin-check
+Disallow: /api/admin/login
+Disallow: /api/admin/logout
+Disallow: /api/heartbeat
+Disallow: /api/visit
+
+Sitemap: https://alex-cinema-production.up.railway.app/sitemap.xml

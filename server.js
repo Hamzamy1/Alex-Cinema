@@ -483,6 +483,8 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml'
@@ -871,6 +873,14 @@ const server = http.createServer(async (req, res) => {
         visits: stats.visits.slice(0, 50),
         now: Date.now()
       });
+      return;
+    }
+
+    // Google Search Console verification
+    const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION || 'google52a36e2304795088';
+    if (p === `/google${GOOGLE_SITE_VERIFICATION}.html`) {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`google-site-verification: google${GOOGLE_SITE_VERIFICATION}.html`);
       return;
     }
 
