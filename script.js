@@ -17,9 +17,60 @@ const SECTION_CONFIG = {
   foreign:{ title: 'أجنبي',         api: '/api/discover?type=movie&language=en&sort=popularity.desc', heroTitle: 'أجنبي', heroSub: 'أحدث الأفلام والمسلسلات الأجنبية.' }
 };
 
+const GENRES_DATA = [
+  { id: 28,  name: 'أكشن',       icon: 'fas fa-burst',        color: '#e50914', bg: 'linear-gradient(135deg, #2a0a0e, #1a0508)' },
+  { id: 18,  name: 'دراما',      icon: 'fas fa-masks-theater', color: '#8b5cf6', bg: 'linear-gradient(135deg, #1a0f2e, #0f0a1e)' },
+  { id: 878, name: 'خيال علمي',   icon: 'fas fa-rocket',       color: '#06b6d4', bg: 'linear-gradient(135deg, #0a1e2a, #061520)' },
+  { id: 35,  name: 'كوميديا',     icon: 'fas fa-face-laugh',    color: '#f59e0b', bg: 'linear-gradient(135deg, #2a1f0a, #1e1608)' },
+  { id: 12,  name: 'مغامرة',     icon: 'fas fa-compass',       color: '#10b981', bg: 'linear-gradient(135deg, #0a2a1e, #081e15)' },
+  { id: 27,  name: 'رعب',        icon: 'fas fa-ghost',         color: '#6b21a8', bg: 'linear-gradient(135deg, #1a0a2e, #120820)' },
+  { id: 10749,name: 'رومانسي',   icon: 'fas fa-heart',         color: '#ec4899', bg: 'linear-gradient(135deg, #2a0a1e, #1e0815)' },
+  { id: 80,  name: 'جريمة',      icon: 'fas fa-mask',          color: '#ef4444', bg: 'linear-gradient(135deg, #2a0a0a, #1e0808)' },
+  { id: 16,  name: 'انمي',       icon: 'fas fa-star',          color: '#f97316', bg: 'linear-gradient(135deg, #2a1a0a, #1e1208)' },
+  { id: 53,  name: 'اثارة',      icon: 'fas fa-bolt',          color: '#eab308', bg: 'linear-gradient(135deg, #2a220a, #1e1908)' },
+  { id: 9648,name: 'غموض',       icon: 'fas fa-question-circle',color: '#6366f1', bg: 'linear-gradient(135deg, #14142a, #0e0e20)' },
+  { id: 99,  name: 'وثائقي',     icon: 'fas fa-camera',        color: '#78716c', bg: 'linear-gradient(135deg, #1a1a1a, #111111)' }
+];
+
 async function api(path) {
   const res = await fetch(path);
   return res.json();
+}
+
+function renderGenres() {
+  const grid = document.getElementById('genresGrid');
+  if (!grid) return;
+  grid.innerHTML = GENRES_DATA.map(g =>
+    `<div class="genre-card" style="background:${g.bg}" onclick="selectGenre(${g.id}, '${g.name}')">
+      <div class="genre-card-shine"></div>
+      <div class="genre-card-icon" style="color:${g.color}"><i class="${g.icon}"></i></div>
+      <div class="genre-card-name">${g.name}</div>
+      <div class="genre-card-count">تصفح الأفلام</div>
+    </div>`
+  ).join('');
+}
+
+function selectGenre(genreId, genreName) {
+  currentGenre = String(genreId);
+  currentSection = 'genres';
+  currentQuery = '';
+  currentPage = 1;
+  currentMediaType = 'movie';
+
+  const genresSection = document.getElementById('genresSection');
+  const filters = document.getElementById('filtersSection');
+  const moviesSection = document.querySelector('.movies-section');
+  if (genresSection) genresSection.style.display = 'none';
+  if (filters) filters.style.display = 'none';
+  if (moviesSection) moviesSection.style.display = 'block';
+
+  document.getElementById('sectionTitle').textContent = genreName;
+
+  document.querySelectorAll('#mainNav a').forEach(x => x.classList.remove('active'));
+  const genresLink = document.querySelector('#mainNav a[data-section="genres"]');
+  if (genresLink) genresLink.classList.add('active');
+
+  loadMovies();
 }
 
 async function loadMovies() {
@@ -903,19 +954,29 @@ document.addEventListener('DOMContentLoaded', () => {
       currentQuery = '';
       currentPage = 1;
 
-      if (currentSection === 'tv' || currentSection === 'genres') {
+      if (currentSection === 'tv') {
         currentMediaType = 'tv';
       } else {
         currentMediaType = 'movie';
       }
 
       const filters = document.getElementById('filtersSection');
-      filters.style.display = currentSection === 'genres' || currentSection === 'home' || currentSection === 'movies' || currentSection === 'tv' ? 'block' : 'none';
+      const genresSection = document.getElementById('genresSection');
+      const moviesSection = document.querySelector('.movies-section');
 
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('.filter-btn[data-filter=""]')?.classList.add('active');
-      document.getElementById('searchInput').value = '';
-      loadMovies();
+      if (currentSection === 'genres') {
+        if (filters) filters.style.display = 'none';
+        if (genresSection) { genresSection.style.display = 'block'; renderGenres(); }
+        if (moviesSection) moviesSection.style.display = 'none';
+      } else {
+        if (genresSection) genresSection.style.display = 'none';
+        if (filters) filters.style.display = currentSection === 'home' || currentSection === 'movies' || currentSection === 'tv' ? 'block' : 'none';
+        if (moviesSection) moviesSection.style.display = 'block';
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-btn[data-filter=""]')?.classList.add('active');
+        document.getElementById('searchInput').value = '';
+        loadMovies();
+      }
     });
   });
 
