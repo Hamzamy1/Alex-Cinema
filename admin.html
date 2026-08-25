@@ -201,6 +201,8 @@
     .gate i { font-size: 56px; color: #e50914; }
     .gate h1 { font-size: 22px; }
     .gate p { color: #888; font-size: 14px; }
+    #loginForm input::placeholder { color: #555; }
+    #loginForm input:focus { border-color: #e50914 !important; box-shadow: 0 0 20px rgba(229,9,20,0.15); }
   </style>
 </head>
 <body>
@@ -215,6 +217,7 @@
       <button class="btn active" id="autoBtn" onclick="toggleAuto()"><i class="fas fa-sync-alt"></i> تحديث تلقائي</button>
       <button class="btn" onclick="load()"><i class="fas fa-redo"></i> تحديث الآن</button>
       <button class="btn danger" onclick="clearLog()"><i class="fas fa-trash"></i> مسح السجل</button>
+      <button class="btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
     </div>
   </header>
 
@@ -319,24 +322,73 @@
 
   <div class="gate" id="gate">
     <i class="fas fa-lock"></i>
-    <h1>403 - ممنوع</h1>
-    <p>مفتاح غير صحيح أو مفقود.<br>افتح اللينك بالمفتاح الصحيح.</p>
+    <h1>تسجيل الدخول</h1>
+    <p>ادخل اسم المستخدم وكلمة المرور للدخول للوحة التحكم</p>
+    <form id="loginForm" style="margin-top:16px;width:300px;">
+      <input type="text" id="loginUser" placeholder="اسم المستخدم" autocomplete="username"
+        style="width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:12px;outline:none;font-family:inherit;">
+      <input type="password" id="loginPass" placeholder="كلمة المرور" autocomplete="current-password"
+        style="width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:16px;outline:none;font-family:inherit;">
+      <button type="submit" class="btn active" style="width:100%;justify-content:center;padding:12px;">
+        <i class="fas fa-sign-in-alt"></i> دخول
+      </button>
+      <p id="loginError" style="color:#f87171;font-size:13px;margin-top:12px;display:none;"></p>
+    </form>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const KEY = params.get('key') || '';
     let autoRefresh = true;
     let timer = null;
     let currentData = null;
 
-    if (!KEY) {
+    (async function init() {
+      try {
+        const res = await fetch('/api/admin-check');
+        const d = await res.json();
+        if (d.ok) { showDashboard(); } else { showGate(); }
+      } catch { showGate(); }
+    })();
+
+    function showGate() {
       document.getElementById('gate').style.display = 'flex';
-    } else {
+      document.getElementById('main').style.display = 'none';
+    }
+
+    function showDashboard() {
       document.getElementById('gate').style.display = 'none';
       document.getElementById('main').style.display = 'block';
       load();
       startAuto();
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const user = document.getElementById('loginUser').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      const errEl = document.getElementById('loginError');
+      errEl.style.display = 'none';
+      if (!user || !pass) { errEl.textContent = 'ادخل اسم المستخدم وكلمة المرور'; errEl.style.display = 'block'; return; }
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, pass })
+        });
+        const d = await res.json();
+        if (d.ok && d.token) {
+          document.cookie = 'admin_token=' + d.token + ';path=/;max-age=86400;samesite=strict';
+          showDashboard();
+        } else {
+          errEl.textContent = d.error || 'بيانات خاطئة';
+          errEl.style.display = 'block';
+        }
+      } catch { errEl.textContent = 'خطأ في الاتصال بالسيرفر'; errEl.style.display = 'block'; }
+    });
+
+    async function logout() {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      document.cookie = 'admin_token=;path=/;max-age=0';
+      location.reload();
     }
 
     function startAuto() {
@@ -351,8 +403,8 @@
 
     async function load() {
       try {
-        const res = await fetch('/api/admin?key=' + encodeURIComponent(KEY));
-        if (res.status === 403) { location.href = location.pathname; return; }
+        const res = await fetch('/api/admin');
+        if (res.status === 403) { document.cookie = 'admin_token=;path=/;max-age=0'; location.reload(); return; }
         const data = await res.json();
         currentData = data;
         document.getElementById('lastUpdate').textContent = new Date(data.now).toLocaleTimeString('ar-EG');
@@ -459,7 +511,7 @@
 
     async function clearLog() {
       if (!confirm('متأكد إنك عايز تمسح سجل الزيارات؟')) return;
-      await fetch('/api/admin?key=' + encodeURIComponent(KEY) + '&action=clear');
+      await fetch('/api/admin?action=clear');
       load();
     }
   </script>

@@ -18,9 +18,12 @@ const STATS_KEY = process.env.STATS_KEY;
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
 const SUBDL_API_KEY = process.env.SUBDL_API_KEY || '';
 const OS_API_KEY = process.env.OS_API_KEY || '';
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || '';
 
 if (!STATS_KEY) { console.error('Missing env: STATS_KEY'); process.exit(1); }
 if (!TMDB_TOKEN) { console.error('Missing env: TMDB_TOKEN'); process.exit(1); }
+if (!ADMIN_PASS) { console.error('Missing env: ADMIN_PASS'); process.exit(1); }
 
 const GENRE_MAP = {
   28: 'اكشن', 12: 'مغامرة', 16: 'انمي', 35: 'كوميديا',
@@ -71,6 +74,39 @@ try {
 const activeSessions = new Map(); // sid -> lastSeen timestamp
 const geoCache = new Map();
 const trackTimes = new Map();
+
+/* ================= Admin Auth ================= */
+const adminSessions = new Map();   // token -> { user, created }
+const loginAttempts = new Map();   // ip -> [{ time }]
+const ADMIN_SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+function genToken() {
+  return require('crypto').randomBytes(32).toString('hex');
+}
+
+function cleanLoginAttempts(ip) {
+  const attempts = loginAttempts.get(ip) || [];
+  loginAttempts.set(ip, attempts.filter(a => Date.now() - a < LOGIN_WINDOW_MS));
+}
+
+function isAdminSessionValid(token) {
+  if (!token || !adminSessions.has(token)) return false;
+  const s = adminSessions.get(token);
+  if (Date.now() - s.created > ADMIN_SESSION_TTL) {
+    adminSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function cleanAdminSessions() {
+  for (const [token, s] of adminSessions) {
+    if (Date.now() - s.created > ADMIN_SESSION_TTL) adminSessions.delete(token);
+  }
+}
+/* ================= End Admin Auth ================= */
 
 function saveStats() {
   try { fs.writeFileSync(path.join(__dirname, 'stats.json'), JSON.stringify(stats)); } catch {}
@@ -751,10 +787,60 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Admin login
+    if (p === '/api/admin/login' && req.method === 'POST') {
+      const ip = getClientIp(req);
+      cleanLoginAttempts(ip);
+      const attempts = loginAttempts.get(ip) || [];
+
+      if (attempts.length >= MAX_LOGIN_ATTEMPTS) {
+        sendJson(res, { ok: false, error: 'تم حظرك مؤقتًا due to كثرة المحاولات. حاول بعد 5 دقائق' }, 429);
+        return;
+      }
+
+      let body = '';
+      for await (const chunk of req) body += chunk;
+      try {
+        const { user, pass } = JSON.parse(body);
+        if (user === ADMIN_USER && pass === ADMIN_PASS) {
+          const token = genToken();
+          adminSessions.set(token, { user: ADMIN_USER, created: Date.now() });
+          loginAttempts.delete(ip);
+          sendJson(res, { ok: true, token });
+        } else {
+          if (!loginAttempts.has(ip)) loginAttempts.set(ip, []);
+          loginAttempts.get(ip).push(Date.now());
+          const remaining = MAX_LOGIN_ATTEMPTS - loginAttempts.get(ip).length;
+          sendJson(res, { ok: false, error: `بيانات خاطئة. متبقي ${remaining} محاولة` }, 401);
+        }
+      } catch {
+        sendJson(res, { ok: false, error: 'طلب غير صالح' }, 400);
+      }
+      return;
+    }
+
+    // Admin logout
+    if (p === '/api/admin/logout' && req.method === 'POST') {
+      const token = (req.headers.cookie || '').match(/admin_token=([^;]+)/)?.[1] || '';
+      if (token) adminSessions.delete(token);
+      sendJson(res, { ok: true });
+      return;
+    }
+
+    // Check admin session
+    if (p === '/api/admin-check') {
+      const token = (req.headers.cookie || '').match(/admin_token=([^;]+)/)?.[1] || '';
+      sendJson(res, { ok: isAdminSessionValid(token) });
+      return;
+    }
+
     if (p === '/api/admin') {
       const key = url.searchParams.get('key') || '';
       const action = url.searchParams.get('action') || '';
-      if (key !== STATS_KEY) {
+
+      // Accept old STATS_KEY OR valid session token
+      const token = (req.headers.cookie || '').match(/admin_token=([^;]+)/)?.[1] || '';
+      if (key !== STATS_KEY && !isAdminSessionValid(token)) {
         sendJson(res, { error: 'unauthorized' }, 403);
         return;
       }
