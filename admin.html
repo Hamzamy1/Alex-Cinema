@@ -1,519 +1,607 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة التحكم - Alex Cinema</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-      background: #0f0f1a;
-      color: #e5e5e5;
-      min-height: 100vh;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم - Alex Cinema</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#0f0f1a;color:#fff;direction:rtl;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;top:0;left:0;right:0;0;background:radial-gradient(ellipse at 20% 50%,rgba(229,9,20,0.03) 0%,transparent 50%),radial-gradient(ellipse at 80% 50%,rgba(229,9,20,0.02) 0%,transparent 50%);pointer-events:none;z-index:-1}
+::selection{background:rgba(229,9,20,0.3);color:#fff}
 
-    /* Top Bar */
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding: 14px 24px;
-      background: rgba(15, 15, 26, 0.9);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: bold; color: #fff; }
-    .logo i { color: #e50914; font-size: 22px; }
-    .logo span {
-      font-size: 12px; font-weight: normal; color: #888;
-      background: #1a1a2e; border: 1px solid rgba(255,255,255,0.08);
-      padding: 3px 10px; border-radius: 20px;
-    }
-    .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .update-time { font-size: 12px; color: #777; display: flex; align-items: center; gap: 6px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      background: #1a1a2e; color: #ddd; border: 1px solid rgba(255,255,255,0.1);
-      padding: 8px 14px; border-radius: 8px; font-size: 13px;
-      cursor: pointer; font-family: inherit; transition: all 0.2s;
-    }
-    .btn:hover { border-color: #e50914; color: #fff; }
-    .btn.active { background: #e50914; border-color: #e50914; color: #fff; }
-    .btn.danger:hover { background: #7a0a0e; border-color: #e50914; }
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#0f0f1a}
+::-webkit-scrollbar-thumb{background:rgba(229,9,20,0.3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(229,9,20,0.5)}
 
-    /* Tabs */
-    .tabs {
-      display: flex; gap: 6px; padding: 14px 24px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      overflow-x: auto;
-    }
-    .tab {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: none; border: none; color: #888;
-      padding: 10px 18px; font-size: 14px; cursor: pointer;
-      font-family: inherit; border-bottom: 2px solid transparent;
-      white-space: nowrap; transition: all 0.2s;
-    }
-    .tab:hover { color: #ddd; }
-    .tab.active { color: #fff; border-bottom-color: #e50914; }
-    .tab i { color: inherit; }
+/* ===== Starfield ===== */
+#starfield{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.sf-layer{position:absolute;inset:0;will-change:transform}
+.sf-layer.a{animation:sfDriftA 140s ease-in-out infinite alternate}
+.sf-layer.b{animation:sfDriftB 100s ease-in-out infinite alternate}
+.sf-layer.c{animation:sfDriftC 120s ease-in-out infinite alternate}
+.sf-band{position:absolute;top:36%;left:-70%;width:240%;height:30%;transform:rotate(-28deg);pointer-events:none}
+.sf-haze{position:absolute;border-radius:50%;filter:blur(48px);background:radial-gradient(closest-side,rgba(205,215,255,0.055),rgba(150,165,230,0.02) 55%,transparent 78%)}
+.sf-star{position:absolute;border-radius:50%;background:#fff;opacity:var(--o,0.35);animation:sfTwinkle var(--tdur,4s) ease-in-out var(--tdelay,0s) infinite}
+.sf-star.lg{box-shadow:0 0 7px 1px rgba(255,255,255,0.30)}
+.sf-shooter{position:absolute;width:var(--len,130px);height:1px;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,0.65),transparent);opacity:0;animation:shoot var(--sdur,11s) ease-in var(--sdelay,5s) infinite}
+@keyframes sfDriftA{from{transform:translate3d(0,0,0)}to{transform:translate3d(-4%,3%,0)}}
+@keyframes sfDriftB{from{transform:translate3d(0,0,0)}to{transform:translate3d(3%,-4%,0)}}
+@keyframes sfDriftC{from{transform:translate3d(0,0,0)}to{transform:translate3d(-3%,-2%,0)}}
+@keyframes sfTwinkle{0%,100%{opacity:var(--o,0.35);transform:scale(1)}50%{opacity:calc(var(--o,0.35)*0.15);transform:scale(0.7)}}
+@keyframes shoot{0%,84%{opacity:0;transform:rotate(var(--ang,-30deg)) translate3d(0,0,0)}87%{opacity:var(--peak,0.85)}96%,100%{opacity:0;transform:rotate(var(--ang,-30deg)) translate3d(-58vw,0,0)}}
+body::after{content:'';position:fixed;inset:-140px;z-index:-1;pointer-events:none;opacity:0.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");animation:grainShift 0.9s steps(1) infinite}
+@keyframes grainShift{0%{transform:translate3d(0,0,0)}12.5%{transform:translate3d(-46px,28px,0)}25%{transform:translate3d(30px,-52px,0)}37.5%{transform:translate3d(-64px,-20px,0)}50%{transform:translate3d(52px,44px,0)}62.5%{transform:translate3d(-24px,-60px,0)}75%{transform:translate3d(60px,12px,0)}87.5%{transform:translate3d(-38px,54px,0)}100%{transform:translate3d(0,0,0)}}
+@media(max-width:768px){.sf-layer.b,.sf-layer.c{display:none}body::after{opacity:0.04}}
 
-    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
-    section.tab-content { display: none; }
-    section.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* ===== Ripple ===== */
+.ripple-ink{position:absolute;border-radius:50%;background:rgba(229,9,20,0.3);pointer-events:none;animation:ripplePop .7s ease forwards}
+@keyframes ripplePop{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(2.5)}}
 
-    /* KPI Cards */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .card {
-      background: linear-gradient(145deg, #1a1a2e, #151526);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 14px;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-    .card::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #e50914, transparent);
-      opacity: 0.6;
-    }
-    .card-icon {
-      width: 52px; height: 52px; flex-shrink: 0;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      background: rgba(229, 9, 20, 0.12);
-      color: #e50914;
-    }
-    .card-icon.green { background: rgba(74, 222, 128, 0.1); color: #4ade80; }
-    .card-icon.blue { background: rgba(96, 165, 250, 0.1); color: #60a5fa; }
-    .card-icon.purple { background: rgba(192, 132, 252, 0.1); color: #c084fc; }
-    .card .num { font-size: 26px; font-weight: bold; color: #fff; line-height: 1.1; }
-    .card .lbl { font-size: 12px; color: #999; margin-top: 3px; }
-    .card .delta { font-size: 11px; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
-    .delta.up { color: #4ade80; }
-    .delta.down { color: #f87171; }
-    .delta.flat { color: #888; }
+/* ===== Login Gate ===== */
+.gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:500;background:rgba(15,15,26,0.6)}
+.gate-card{width:420px;max-width:92%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:48px 40px 40px;text-align:center;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 30px 80px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);animation:gateIn .6s cubic-bezier(.22,1,.36,1)}
+@keyframes gateIn{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.gate-icon{width:80px;height:80px;margin:0 auto 24px;border-radius:50%;background:rgba(229,9,20,0.12);display:flex;align-items:center;justify-content:center;animation:iconPulse 3s ease-in-out infinite}
+.gate-icon i{font-size:36px;color:#e50914}
+@keyframes iconPulse{0%,100%{box-shadow:0 0 0 0 rgba(229,9,20,0.15)}50%{box-shadow:0 0 0 18px rgba(229,9,20,0)}}
+.gate-card h2{font-size:22px;margin-bottom:6px}
+.gate-card .sub{color:#888;font-size:14px;margin-bottom:28px}
+.gate-card input{width:100%;padding:14px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.05);color:#fff;font-size:15px;font-family:inherit;outline:none;transition:all .3s;margin-bottom:14px}
+.gate-card input:focus{border-color:#e50914;background:rgba(255,255,255,0.08);box-shadow:0 0 20px rgba(229,9,20,0.1)}
+.gate-card input::placeholder{color:#555}
+.login-err{display:none;color:#e50914;font-size:13px;margin-bottom:14px;padding:10px;background:rgba(229,9,20,0.1);border-radius:8px}
+.login-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#e50914,#b00710);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.login-btn:hover{box-shadow:0 8px 30px rgba(229,9,20,0.4);transform:translateY(-1px)}
+.login-btn:active{transform:translateY(0)}
 
-    /* Panels */
-    .panel {
-      background: #1a1a2e;
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .panel h2 {
-      font-size: 15px; color: #fff; margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .panel h2 i { color: #e50914; font-size: 14px; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    @media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+/* ===== Topbar ===== */
+.topbar{background:rgba(15,15,26,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;gap:16px;flex-wrap:wrap}
+.topbar-logo{font-size:20px;font-weight:800;color:#e50914;display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.topbar-logo i{animation:logoGlow 3s ease-in-out infinite}
+@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px rgba(229,9,20,0.5))}}
+.topbar-info{display:flex;align-items:center;gap:16px;color:#888;font-size:13px;flex-wrap:wrap}
+.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.topbar-actions .btn{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#ccc;font-size:13px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .25s;position:relative;overflow:hidden}
+.topbar-actions .btn:hover{border-color:#e50914;color:#fff}
+.topbar-actions .btn.active{background:rgba(229,9,20,0.15);border-color:#e50914;color:#e50914}
+.topbar-actions .btn.logout-btn:hover{background:rgba(229,9,20,0.2);border-color:#e50914;color:#e50914}
 
-    /* Chart */
-    .chart {
-      display: flex; align-items: flex-end; gap: 6px;
-      height: 180px; padding-top: 24px;
-    }
-    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
-    .bar {
-      width: 65%; background: linear-gradient(180deg, #e50914, #7a0a0e);
-      border-radius: 6px 6px 0 0; min-height: 4px;
-      position: relative; transition: height 0.4s ease;
-    }
-    .bar:hover { filter: brightness(1.3); }
-    .bar .val {
-      position: absolute; top: -22px; left: 50%; transform: translateX(50%);
-      background: #0f0f1a; border: 1px solid rgba(255,255,255,0.15);
-      font-size: 10px; color: #ccc; padding: 1px 7px; border-radius: 6px;
-      opacity: 0; transition: opacity 0.2s; white-space: nowrap;
-    }
-    .bar:hover .val { opacity: 1; }
-    .bar-label { font-size: 10px; color: #666; margin-top: 8px; }
+/* ===== Tabs ===== */
+.tab-nav{display:flex;gap:4px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05);padding:0 28px;overflow-x:auto}
+.tab{padding:14px 22px;font-size:14px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all .3s;white-space:nowrap;position:relative}
+.tab:hover{color:#ccc}
+.tab.active{color:#e50914;border-bottom-color:#e50914;box-shadow:0 2px 12px rgba(229,9,20,0.15)}
+.tab i{margin-left:8px}
 
-    /* Lists */
-    .row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 8px 0; font-size: 13px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-    .row:last-child { border-bottom: none; }
-    .row .r-icon { width: 30px; text-align: center; color: #e50914; font-size: 15px; }
-    .row .r-name { min-width: 110px; color: #ddd; }
-    .row .r-bar { flex: 1; background: #22223a; border-radius: 6px; height: 8px; overflow: hidden; }
-    .row .r-bar div { height: 100%; background: linear-gradient(90deg, #e50914, #ff4d5a); border-radius: 6px; transition: width 0.5s ease; }
-    .row .r-count { min-width: 32px; text-align: left; color: #fff; font-weight: bold; }
-    .empty { color: #666; font-size: 13px; text-align: center; padding: 30px 0; }
-    .empty i { font-size: 30px; display: block; margin-bottom: 10px; color: #333; }
+/* ===== Main Content ===== */
+.main{padding:28px;display:none}
+.main.show{display:block}
+.tab-content{display:none;animation:fadeSlideIn .4s ease}
+.tab-content.active{display:block}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-    /* Table */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    th { color: #999; font-weight: normal; font-size: 11.5px; white-space: nowrap; }
-    td { color: #ddd; }
-    tr:hover td { background: rgba(229, 9, 20, 0.05); }
-    td .ip { direction: ltr; display: inline-block; color: #60a5fa; font-size: 11.5px; }
-    .badge-device { display: inline-flex; align-items: center; gap: 5px; }
-    .badge-device i { color: #e50914; }
-    .search-box {
-      display: flex; align-items: center; gap: 10px;
-      background: #22223a; border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px; padding: 8px 14px; margin-bottom: 16px;
-      max-width: 340px;
-    }
-    .search-box i { color: #666; font-size: 13px; }
-    .search-box input {
-      background: none; border: none; outline: none; color: #fff;
-      font-family: inherit; font-size: 13px; width: 100%;
-    }
+/* ===== KPI Cards ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px;margin-bottom:28px}
+.kpi-card{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:22px;position:relative;overflow:hidden;animation:cardSlideIn .5s ease backwards;transition:all .35s}
+.kpi-card:hover{border-color:rgba(229,9,20,0.25);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.25)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#e50914,transparent);opacity:.6}
+.kpi-card:nth-child(1){animation-delay:0s}
+.kpi-card:nth-child(2){animation-delay:.08s}
+.kpi-card:nth-child(3){animation-delay:.16s}
+.kpi-card:nth-child(4){animation-delay:.24s}
+@keyframes cardSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.kpi-label{font-size:13px;color:#888;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.kpi-label i{color:#e50914;font-size:15px}
+.kpi-value{font-size:30px;font-weight:800}
+.delta{font-size:13px;margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-weight:500}
+.delta.up{color:#4ade80;background:rgba(74,222,128,0.1)}
+.delta.down{color:#e50914;background:rgba(229,9,20,0.1)}
+.delta.flat{color:#888;background:rgba(255,255,255,0.05)}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:8px;animation:livePulse 2s ease-in-out infinite}
+@keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.5)}50%{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
 
-    /* Live dot */
-    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block; animation: pulse 1.5s infinite; margin-inline-start: 4px; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+/* ===== Chart ===== */
+.chart-wrap{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px;margin-bottom:28px;animation:cardSlideIn .5s ease .15s backwards}
+.chart-title{font-size:16px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.chart-title i{color:#e50914}
+#chart{display:flex;align-items:flex-end;gap:6px;height:200px;padding-top:10px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar{width:100%;min-width:0;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#e50914,#7a0509);position:relative;display:flex;align-items:flex-start;justify-content:center;transition:height .6s cubic-bezier(.22,1,.36,1);cursor:pointer}
+.bar:hover{background:linear-gradient(180deg,#ff1a25,#a00a12);box-shadow:0 0 16px rgba(229,9,20,0.3)}
+.val{font-size:10px;color:#fff;padding-top:6px;white-space:nowrap;opacity:0;transition:opacity .2s}
+.bar-col:hover .val{opacity:1}
+.bar-label{font-size:10px;color:#666;margin-top:6px;text-align:center;white-space:nowrap}
 
-    /* Error / missing key */
-    .gate {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 14px; text-align: center;
-    }
-    .gate i { font-size: 56px; color: #e50914; }
-    .gate h1 { font-size: 22px; }
-    .gate p { color: #888; font-size: 14px; }
-    #loginForm input::placeholder { color: #555; }
-    #loginForm input:focus { border-color: #e50914 !important; box-shadow: 0 0 20px rgba(229,9,20,0.15); }
-  </style>
+/* ===== List Panels ===== */
+.list-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;margin-bottom:28px}
+.list-panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;animation:cardSlideIn .5s ease backwards;transition:all .3s}
+.list-panel:hover{border-color:rgba(255,255,255,0.1)}
+.list-panel h3{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:#ccc}
+.list-panel h3 i{color:#e50914}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .2s}
+.row:last-child{border-bottom:none}
+.row:hover{background:rgba(255,255,255,0.02);border-radius:8px}
+.r-icon{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(229,9,20,0.1);color:#e50914;font-size:12px;flex-shrink:0}
+.r-name{flex:1;font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-bar{width:100px;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;flex-shrink:0}
+.r-bar div{height:100%;background:linear-gradient(90deg,#e50914,#a00a12);border-radius:3px;transition:width .6s cubic-bezier(.22,1,.36,1)}
+.r-count{font-size:13px;font-weight:600;color:#aaa;min-width:32px;text-align:left;font-variant-numeric:tabular-nums}
+.empty{text-align:center;padding:30px;color:#555;font-size:13px}
+.empty i{display:block;font-size:24px;margin-bottom:8px}
+
+/* ===== Visits Table ===== */
+.visits-panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;animation:cardSlideIn .5s ease .1s backwards}
+.visits-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.visits-header h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:#ccc}
+.visits-header h3 i{color:#e50914}
+.visit-count{color:#888;font-size:13px;font-weight:400}
+.visit-search{padding:10px 16px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:13px;font-family:inherit;outline:none;width:260px;max-width:100%;transition:all .3s}
+.visit-search:focus{border-color:#e50914;background:rgba(255,255,255,0.08)}
+.visit-search::placeholder{color:#555}
+.table-wrap{overflow-x:auto;margin-top:12px}
+.visits-table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+.visits-table th{text-align:right;padding:10px 12px;color:#888;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap}
+.visits-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.03);white-space:nowrap}
+.visits-table tr:hover td{background:rgba(229,9,20,0.04)}
+.badge-device{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:12px;white-space:nowrap}
+.badge-device i{color:#e50914}
+.ip{color:#e50914;font-weight:600;font-family:monospace;font-size:11px}
+#visitsEmpty{text-align:center;padding:40px;color:#555;display:none}
+#visitsEmpty i{font-size:28px;display:block;margin-bottom:8px;color:#444}
+
+/* ===== Section title ===== */
+.section-title{font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.section-title i{color:#e50914}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  .topbar{padding:12px 16px}
+  .topbar-logo{font-size:17px}
+  .topbar-actions .btn span{display:none}
+  .tab-nav{padding:0 12px}
+  .tab{padding:12px 16px;font-size:13px}
+  .main{padding:16px}
+  .kpi-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .kpi-value{font-size:24px}
+  .list-grid{grid-template-columns:1fr}
+  #chart{height:150px}
+  .visit-search{width:100%}
+  .visits-header{flex-direction:column;align-items:stretch}
+}
+</style>
 </head>
 <body>
 
+<!-- Starfield populated by JS -->
+<div id="starfield"></div>
+
+<!-- ===== LOGIN GATE ===== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-icon"><i class="fas fa-shield-halved"></i></div>
+    <h2>Alex Cinema</h2>
+    <p class="sub">لوحة التحكم</p>
+    <form id="loginForm">
+      <input type="text" id="loginUser" placeholder="اسم المستخدم" autocomplete="username">
+      <input type="password" id="loginPass" placeholder="كلمة المرور" autocomplete="current-password">
+      <div class="login-err" id="loginError"></div>
+      <button type="submit" class="login-btn">دخول</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="main" id="main">
+
+  <!-- Topbar -->
   <header class="topbar">
-    <div class="logo">
-      <i class="fas fa-film"></i>
-      Alex Cinema <span><i class="fas fa-chart-line"></i> لوحة التحكم</span>
+    <a href="/" class="topbar-logo"><i class="fas fa-clapperboard"></i> Alex Cinema</a>
+    <div class="topbar-info">
+      <span><i class="fas fa-clock"></i> آخر تحديث: <span id="lastUpdate">—</span></span>
     </div>
-    <div class="top-actions">
-      <span class="update-time"><i class="fas fa-clock"></i> آخر تحديث: <b id="lastUpdate">--</b></span>
-      <button class="btn active" id="autoBtn" onclick="toggleAuto()"><i class="fas fa-sync-alt"></i> تحديث تلقائي</button>
-      <button class="btn" onclick="load()"><i class="fas fa-redo"></i> تحديث الآن</button>
-      <button class="btn danger" onclick="clearLog()"><i class="fas fa-trash"></i> مسح السجل</button>
-      <button class="btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
+    <div class="topbar-actions">
+      <button class="btn active" id="autoBtn" onclick="toggleAuto()"><i class="fas fa-sync-alt"></i> <span>تحديث تلقائي</span></button>
+      <button class="btn" onclick="load()"><i class="fas fa-redo"></i> <span>تحديث</span></button>
+      <button class="btn" onclick="clearLog()"><i class="fas fa-trash"></i> <span>مسح السجل</span></button>
+      <button class="btn logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span>خروج</span></button>
     </div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="overview" onclick="switchTab('overview')"><i class="fas fa-chart-pie"></i> نظرة عامة</button>
-    <button class="tab" data-tab="visits" onclick="switchTab('visits')"><i class="fas fa-list"></i> آخر الزيارات</button>
-    <button class="tab" data-tab="devices" onclick="switchTab('devices')"><i class="fas fa-mobile-alt"></i> الأجهزة والمتصفحات</button>
-    <button class="tab" data-tab="countries" onclick="switchTab('countries')"><i class="fas fa-globe"></i> الدول</button>
+  <!-- Tabs -->
+  <nav class="tab-nav">
+    <div class="tab active" data-tab="overview" onclick="switchTab('overview')"><i class="fas fa-chart-pie"></i>نظرة عامة</div>
+    <div class="tab" data-tab="visits" onclick="switchTab('visits')"><i class="fas fa-list"></i>الزيارات</div>
+    <div class="tab" data-tab="devices" onclick="switchTab('devices')"><i class="fas fa-mobile-alt"></i>الأجهزة</div>
+    <div class="tab" data-tab="countries" onclick="switchTab('countries')"><i class="fas fa-globe"></i>الدول</div>
   </nav>
 
-  <main id="main" style="display:none;">
+  <!-- Tab: Overview -->
+  <div class="tab-content active" id="tab-overview">
 
-    <section class="tab-content active" id="tab-overview">
-      <div class="cards">
-        <div class="card">
-          <div class="card-icon"><i class="fas fa-eye"></i></div>
-          <div>
-            <div class="num" id="kToday">0</div>
-            <div class="lbl">زيارات اليوم</div>
-            <div class="delta" id="kTodayDelta"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-icon blue"><i class="fas fa-chart-line"></i></div>
-          <div>
-            <div class="num" id="kViews">0</div>
-            <div class="lbl">إجمالي الزيارات</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-icon purple"><i class="fas fa-users"></i></div>
-          <div>
-            <div class="num" id="kVisitors">0</div>
-            <div class="lbl">زوار فريدين (أجهزة)</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-icon green"><i class="fas fa-user-clock"></i></div>
-          <div>
-            <div class="num" id="kActive">0<span class="live-dot"></span></div>
-            <div class="lbl">متصل الآن</div>
-          </div>
-        </div>
+    <div class="kpi-grid" style="margin-top:28px">
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="fas fa-calendar-day"></i>الزيارات اليوم</div>
+        <div class="kpi-value" id="kToday">0</div>
+        <div class="delta flat" id="kTodayDelta">لا توجد بيانات</div>
       </div>
-
-      <div class="grid2">
-        <div class="panel">
-          <h2><i class="fas fa-calendar-week"></i> الزيارات آخر 14 يوم</h2>
-          <div class="chart" id="chart"></div>
-        </div>
-        <div class="panel">
-          <h2><i class="fas fa-star"></i> أكثر الصفحات زيارة</h2>
-          <div id="pagesList"></div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="fas fa-eye"></i>إجمالي المشاهدات</div>
+        <div class="kpi-value" id="kViews">0</div>
       </div>
-    </section>
-
-    <section class="tab-content" id="tab-visits">
-      <div class="panel">
-        <h2><i class="fas fa-history"></i> آخر الزيارات <span id="visitCount" style="color:#888;font-size:12px;"></span></h2>
-        <div class="search-box">
-          <i class="fas fa-search"></i>
-          <input type="text" id="visitSearch" placeholder="ابحث في الزيارات (دولة، IP، متصفح...)">
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>الوقت</th><th>الصفحة</th><th>الجهاز</th><th>الموديل</th><th>المتصفح</th><th>الشاشة</th><th>اللغة</th><th>المنطقة الزمنية</th><th>الاتصال</th><th>الدولة</th><th>مزود الإنترنت</th><th>IP</th></tr>
-            </thead>
-            <tbody id="visitsBody"></tbody>
-          </table>
-          <div class="empty" id="visitsEmpty" style="display:none;">لا توجد زيارات مسجلة بعد</div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="fas fa-users"></i>الزوار الفريدون</div>
+        <div class="kpi-value" id="kVisitors">0</div>
       </div>
-    </section>
-
-    <section class="tab-content" id="tab-devices">
-      <div class="grid3">
-        <div class="panel">
-          <h2><i class="fas fa-mobile-alt"></i> الأجهزة</h2>
-          <div id="devicesList"></div>
-        </div>
-        <div class="panel">
-          <h2><i class="fas fa-window-restore"></i> المتصفحات</h2>
-          <div id="browsersList"></div>
-        </div>
-        <div class="panel">
-          <h2><i class="fas fa-microchip"></i> موديلات الأجهزة</h2>
-          <div id="modelsList"></div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label"><i class="fas fa-signal"></i>نشطون الآن</div>
+        <div class="kpi-value" id="kActive">0</div>
       </div>
-    </section>
+    </div>
 
-    <section class="tab-content" id="tab-countries">
-      <div class="panel">
-        <h2><i class="fas fa-globe"></i> الدول والمدن</h2>
-        <div id="countriesList"></div>
+    <div class="chart-wrap">
+      <div class="chart-title"><i class="fas fa-chart-bar"></i>الزيارات خلال آخر 7 أيام</div>
+      <div id="chart"></div>
+    </div>
+
+    <div class="list-grid">
+      <div class="list-panel">
+        <h3><i class="fas fa-film"></i>الأكثر مشاهدة</h3>
+        <div id="pagesList"></div>
       </div>
-    </section>
-
-  </main>
-
-  <div class="gate" id="gate">
-    <i class="fas fa-lock"></i>
-    <h1>تسجيل الدخول</h1>
-    <p>ادخل اسم المستخدم وكلمة المرور للدخول للوحة التحكم</p>
-    <form id="loginForm" style="margin-top:16px;width:300px;">
-      <input type="text" id="loginUser" placeholder="اسم المستخدم" autocomplete="username"
-        style="width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:12px;outline:none;font-family:inherit;">
-      <input type="password" id="loginPass" placeholder="كلمة المرور" autocomplete="current-password"
-        style="width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:16px;outline:none;font-family:inherit;">
-      <button type="submit" class="btn active" style="width:100%;justify-content:center;padding:12px;">
-        <i class="fas fa-sign-in-alt"></i> دخول
-      </button>
-      <p id="loginError" style="color:#f87171;font-size:13px;margin-top:12px;display:none;"></p>
-    </form>
+      <div class="list-panel">
+        <h3><i class="fas fa-laptop"></i>الأجهزة</h3>
+        <div id="devicesList"></div>
+      </div>
+      <div class="list-panel">
+        <h3><i class="fas fa-globe"></i>المتصفحات</h3>
+        <div id="browsersList"></div>
+      </div>
+      <div class="list-panel">
+        <h3><i class="fas fa-microchip"></i>الموديلات</h3>
+        <div id="modelsList"></div>
+      </div>
+    </div>
   </div>
 
-  <script>
-    let autoRefresh = true;
-    let timer = null;
-    let currentData = null;
+  <!-- Tab: Visits -->
+  <div class="tab-content" id="tab-visits">
+    <div class="visits-panel" style="margin-top:28px">
+      <div class="visits-header">
+        <h3><i class="fas fa-list"></i>سجل الزيارات <span class="visit-count" id="visitCount">(0 زيارة)</span></h3>
+        <input type="text" class="visit-search" id="visitSearch" placeholder="بحث بالدولة، IP، المتصفح...">
+      </div>
+      <div class="table-wrap">
+        <table class="visits-table">
+          <thead>
+            <tr>
+              <th>الوقت</th><th>الصفحة</th><th>الجهاز</th><th>الموديل</th><th>المتصفح</th><th>الشاشة</th><th>اللغة</th><th>المنطقة</th><th>الاتصال</th><th>الدولة</th><th>مزود الخدمة</th><th>IP</th>
+            </tr>
+          </thead>
+          <tbody id="visitsBody"></tbody>
+        </table>
+        <div id="visitsEmpty"><i class="fas fa-inbox"></i>لا توجد زيارات مسجلة</div>
+      </div>
+    </div>
+  </div>
 
-    (async function init() {
-      try {
-        const res = await fetch('/api/admin-check');
-        const d = await res.json();
-        if (d.ok) { showDashboard(); } else { showGate(); }
-      } catch { showGate(); }
-    })();
+  <!-- Tab: Devices -->
+  <div class="tab-content" id="tab-devices">
+    <div class="list-grid" style="margin-top:28px">
+      <div class="list-panel">
+        <h3><i class="fas fa-mobile-alt"></i>الأجهزة</h3>
+        <div id="devicesList2"></div>
+      </div>
+      <div class="list-panel">
+        <h3><i class="fas fa-laptop"></i>المتصفحات</h3>
+        <div id="browsersList2"></div>
+      </div>
+      <div class="list-panel">
+        <h3><i class="fas fa-microchip"></i>الموديلات</h3>
+        <div id="modelsList2"></div>
+      </div>
+    </div>
+  </div>
 
-    function showGate() {
-      document.getElementById('gate').style.display = 'flex';
-      document.getElementById('main').style.display = 'none';
+  <!-- Tab: Countries -->
+  <div class="tab-content" id="tab-countries">
+    <div class="list-grid" style="margin-top:28px">
+      <div class="list-panel" style="max-width:700px">
+        <h3><i class="fas fa-location-dot"></i>الدول</h3>
+        <div id="countriesList2"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let autoRefresh = true;
+let timer = null;
+let currentData = null;
+
+(function initStarfield() {
+  var field = document.getElementById('starfield');
+  var gauss = function() { return (Math.random() + Math.random() + Math.random()) / 1.5 - 1; };
+
+  [['a', 34, 1], ['b', 22, 0.65]].forEach(function(cfg) {
+    var cls = cfg[0], count = cfg[1], dim = cfg[2];
+    var layer = document.createElement('div');
+    layer.className = 'sf-layer ' + cls;
+    for (var i = 0; i < count; i++) {
+      var s = document.createElement('span');
+      s.className = 'sf-star';
+      s.style.width = s.style.height = (Math.random() * 1.6 + 0.8).toFixed(1) + 'px';
+      s.style.left = (Math.random() * 100).toFixed(2) + '%';
+      s.style.top = (Math.random() * 100).toFixed(2) + '%';
+      s.style.setProperty('--o', (0.12 + Math.random() * 0.38 * dim).toFixed(2));
+      s.style.setProperty('--tdur', (2.5 + Math.random() * 5).toFixed(1) + 's');
+      s.style.setProperty('--tdelay', (-Math.random() * 7).toFixed(1) + 's');
+      layer.appendChild(s);
     }
+    field.appendChild(layer);
+  });
 
-    function showDashboard() {
-      document.getElementById('gate').style.display = 'none';
-      document.getElementById('main').style.display = 'block';
-      load();
-      startAuto();
-    }
+  var layerC = document.createElement('div');
+  layerC.className = 'sf-layer c';
+  var band = document.createElement('div');
+  band.className = 'sf-band';
+  for (var i = 0; i < 3; i++) {
+    var hz = document.createElement('span');
+    hz.className = 'sf-haze';
+    var size = Math.round(26 + Math.random() * 10);
+    hz.style.width = hz.style.height = size + 'vmax';
+    hz.style.left = (10 + i * 34 + Math.random() * 8).toFixed(1) + '%';
+    hz.style.top = (32 + gauss() * 16).toFixed(1) + '%';
+    band.appendChild(hz);
+  }
+  for (var i = 0; i < 90; i++) {
+    var s = document.createElement('span');
+    s.className = 'sf-star';
+    s.style.width = s.style.height = (Math.random() * 0.9 + 0.5).toFixed(1) + 'px';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top = (50 + gauss() * 24).toFixed(1) + '%';
+    s.style.setProperty('--o', (0.06 + Math.random() * 0.22).toFixed(2));
+    s.style.setProperty('--tdur', (3 + Math.random() * 6).toFixed(1) + 's');
+    s.style.setProperty('--tdelay', (-Math.random() * 9).toFixed(1) + 's');
+    band.appendChild(s);
+  }
+  layerC.appendChild(band);
+  for (var i = 0; i < 8; i++) {
+    var s = document.createElement('span');
+    s.className = 'sf-star lg';
+    s.style.width = s.style.height = (2.4 + Math.random() * 1.2).toFixed(1) + 'px';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top = (Math.random() * 100).toFixed(2) + '%';
+    s.style.setProperty('--o', (0.45 + Math.random() * 0.35).toFixed(2));
+    s.style.setProperty('--tdur', (4 + Math.random() * 5).toFixed(1) + 's');
+    s.style.setProperty('--tdelay', (-Math.random() * 9).toFixed(1) + 's');
+    layerC.appendChild(s);
+  }
+  field.appendChild(layerC);
 
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const user = document.getElementById('loginUser').value.trim();
-      const pass = document.getElementById('loginPass').value;
-      const errEl = document.getElementById('loginError');
-      errEl.style.display = 'none';
-      if (!user || !pass) { errEl.textContent = 'ادخل اسم المستخدم وكلمة المرور'; errEl.style.display = 'block'; return; }
-      try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user, pass })
-        });
-        const d = await res.json();
-        if (d.ok && d.token) {
-          document.cookie = 'admin_token=' + d.token + ';path=/;max-age=86400;samesite=strict';
-          showDashboard();
-        } else {
-          errEl.textContent = d.error || 'بيانات خاطئة';
-          errEl.style.display = 'block';
-        }
-      } catch { errEl.textContent = 'خطأ في الاتصال بالسيرفر'; errEl.style.display = 'block'; }
+  var makeShooter = function() {
+    var sh = document.createElement('span');
+    sh.className = 'sf-shooter';
+    sh.style.left = (8 + Math.random() * 78).toFixed(1) + '%';
+    sh.style.top = (3 + Math.random() * 42).toFixed(1) + '%';
+    sh.style.setProperty('--ang', (-16 - Math.random() * 34).toFixed(0) + 'deg');
+    sh.style.setProperty('--len', Math.round(80 + Math.random() * 90) + 'px');
+    sh.style.setProperty('--peak', (0.55 + Math.random() * 0.35).toFixed(2));
+    return sh;
+  };
+  var applyTiming = function(sh, dur, delay) {
+    sh.style.setProperty('--sdur', dur.toFixed(1) + 's');
+    sh.style.setProperty('--sdelay', delay.toFixed(1) + 's');
+  };
+  for (var i = 0; i < 14; i++) {
+    var sh = makeShooter();
+    applyTiming(sh, 8, -(i * 0.61 + Math.random() * 0.15));
+    field.appendChild(sh);
+  }
+  for (var i = 0; i < 6; i++) {
+    var sh = makeShooter();
+    applyTiming(sh, 9.5 + Math.random() * 3.5, -Math.random() * 13);
+    field.appendChild(sh);
+  }
+})();
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.login-btn,.btn');
+  if (!btn) return;
+  var rect = btn.getBoundingClientRect();
+  var size = Math.max(rect.width, rect.height) * 1.15;
+  var ink = document.createElement('span');
+  ink.className = 'ripple-ink';
+  ink.style.width = ink.style.height = size + 'px';
+  ink.style.left = (e.clientX - rect.left - size / 2) + 'px';
+  ink.style.top = (e.clientY - rect.top - size / 2) + 'px';
+  btn.appendChild(ink);
+  setTimeout(function() { ink.remove(); }, 700);
+});
+
+(async function init() {
+  try {
+    const res = await fetch('/api/admin-check');
+    const d = await res.json();
+    if (d.ok) { showDashboard(); } else { showGate(); }
+  } catch { showGate(); }
+})();
+
+function showGate() {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('main').style.display = 'none';
+}
+
+function showDashboard() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('main').classList.add('show');
+  load();
+  startAuto();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!user || !pass) { errEl.textContent = 'ادخل اسم المستخدم وكلمة المرور'; errEl.style.display = 'block'; return; }
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user, pass })
     });
-
-    async function logout() {
-      await fetch('/api/admin/logout', { method: 'POST' });
-      document.cookie = 'admin_token=;path=/;max-age=0';
-      location.reload();
+    const d = await res.json();
+    if (d.ok && d.token) {
+      document.cookie = 'admin_token=' + d.token + ';path=/;max-age=86400;samesite=strict';
+      showDashboard();
+    } else {
+      errEl.textContent = d.error || 'بيانات خاطئة';
+      errEl.style.display = 'block';
     }
+  } catch { errEl.textContent = 'خطأ في الاتصال بالسيرفر'; errEl.style.display = 'block'; }
+});
 
-    function startAuto() {
-      timer = setInterval(load, 15000);
-    }
+async function logout() {
+  await fetch('/api/admin/logout', { method: 'POST' });
+  document.cookie = 'admin_token=;path=/;max-age=0';
+  location.reload();
+}
 
-    function toggleAuto() {
-      autoRefresh = !autoRefresh;
-      document.getElementById('autoBtn').classList.toggle('active', autoRefresh);
-      if (autoRefresh) { startAuto(); load(); } else { clearInterval(timer); }
-    }
+function startAuto() {
+  timer = setInterval(load, 15000);
+}
 
-    async function load() {
-      try {
-        const res = await fetch('/api/admin');
-        if (res.status === 403) { document.cookie = 'admin_token=;path=/;max-age=0'; location.reload(); return; }
-        const data = await res.json();
-        currentData = data;
-        document.getElementById('lastUpdate').textContent = new Date(data.now).toLocaleTimeString('ar-EG');
-        renderAll(data);
-      } catch {}
-    }
+function toggleAuto() {
+  autoRefresh = !autoRefresh;
+  document.getElementById('autoBtn').classList.toggle('active', autoRefresh);
+  if (autoRefresh) { startAuto(); load(); } else { clearInterval(timer); }
+}
 
-    function renderAll(d) {
-      document.getElementById('kToday').textContent = d.today.toLocaleString('ar-EG');
-      document.getElementById('kViews').textContent = d.views.toLocaleString('ar-EG');
-      document.getElementById('kVisitors').textContent = d.visitors.toLocaleString('ar-EG');
-      document.getElementById('kActive').innerHTML = d.active.toLocaleString('ar-EG') + '<span class="live-dot"></span>';
+async function load() {
+  try {
+    const res = await fetch('/api/admin');
+    if (res.status === 403) { document.cookie = 'admin_token=;path=/;max-age=0'; location.reload(); return; }
+    const data = await res.json();
+    currentData = data;
+    document.getElementById('lastUpdate').textContent = new Date(data.now).toLocaleTimeString('ar-EG');
+    renderAll(data);
+  } catch {}
+}
 
-      const delta = document.getElementById('kTodayDelta');
-      if (d.yesterday === 0 && d.today === 0) { delta.className = 'delta flat'; delta.textContent = 'لا توجد بيانات'; }
-      else if (d.yesterday === 0) { delta.className = 'delta up'; delta.innerHTML = '<i class="fas fa-arrow-up"></i> جديد اليوم'; }
-      else {
-        const pct = Math.round(((d.today - d.yesterday) / d.yesterday) * 100);
-        if (pct >= 0) { delta.className = 'delta up'; delta.innerHTML = `<i class="fas fa-arrow-up"></i> ${pct.toLocaleString('ar-EG')}% عن الأمس`; }
-        else { delta.className = 'delta down'; delta.innerHTML = `<i class="fas fa-arrow-down"></i> ${Math.abs(pct).toLocaleString('ar-EG')}% عن الأمس`; }
-      }
+function renderAll(d) {
+  document.getElementById('kToday').textContent = d.today.toLocaleString('ar-EG');
+  document.getElementById('kViews').textContent = d.views.toLocaleString('ar-EG');
+  document.getElementById('kVisitors').textContent = d.visitors.toLocaleString('ar-EG');
+  document.getElementById('kActive').innerHTML = d.active.toLocaleString('ar-EG') + '<span class="live-dot"></span>';
 
-      renderChart(d.days);
-      renderList('pagesList', d.pages, { icon: 'fa-film' });
-      renderList('devicesList', d.devices, { icons: { 'موبايل': 'fa-mobile-alt', 'كمبيوتر': 'fa-desktop', 'تابلت': 'fa-tablet-alt' }, fallback: 'fa-laptop' });
-      renderList('browsersList', d.browsers, { icons: { Chrome: 'fa-chrome', Firefox: 'fa-firefox', Safari: 'fa-safari', Edge: 'fa-edge', Opera: 'fa-opera' }, fallback: 'fa-globe' });
-      renderList('modelsList', d.models, { icon: 'fa-microchip' });
-      renderList('countriesList', d.countries, { icon: 'fa-location-dot' });
-      renderVisits(d.visits);
-    }
+  const delta = document.getElementById('kTodayDelta');
+  if (d.yesterday === 0 && d.today === 0) { delta.className = 'delta flat'; delta.textContent = 'لا توجد بيانات'; }
+  else if (d.yesterday === 0) { delta.className = 'delta up'; delta.innerHTML = '<i class="fas fa-arrow-up"></i> جديد اليوم'; }
+  else {
+    const pct = Math.round(((d.today - d.yesterday) / d.yesterday) * 100);
+    if (pct >= 0) { delta.className = 'delta up'; delta.innerHTML = '<i class="fas fa-arrow-up"></i> ' + pct.toLocaleString('ar-EG') + '% عن الأمس'; }
+    else { delta.className = 'delta down'; delta.innerHTML = '<i class="fas fa-arrow-down"></i> ' + Math.abs(pct).toLocaleString('ar-EG') + '% عن الأمس'; }
+  }
 
-    function renderChart(days) {
-      const max = Math.max(...days.map(x => x.v), 1);
-      document.getElementById('chart').innerHTML = days.map(x => `
-        <div class="bar-col" title="${x.d}">
-          <div class="bar" style="height:${Math.max(4, Math.round((x.v / max) * 100))}%">
-            <span class="val">${x.v.toLocaleString('ar-EG')}</span>
-          </div>
-          <div class="bar-label">${x.d}</div>
-        </div>
-      `).join('');
-    }
+  renderChart(d.days);
+  renderList('pagesList', d.pages, { icon: 'fa-film' });
+  renderList('devicesList', d.devices, { icons: { 'موبايل': 'fa-mobile-alt', 'كمبيوتر': 'fa-desktop', 'تابلت': 'fa-tablet-alt' }, fallback: 'fa-laptop' });
+  renderList('browsersList', d.browsers, { icons: { Chrome: 'fa-chrome', Firefox: 'fa-firefox', Safari: 'fa-safari', Edge: 'fa-edge', Opera: 'fa-opera' }, fallback: 'fa-globe' });
+  renderList('modelsList', d.models, { icon: 'fa-microchip' });
+  renderList('countriesList', d.countries, { icon: 'fa-location-dot' });
+  renderList('devicesList2', d.devices, { icons: { 'موبايل': 'fa-mobile-alt', 'كمبيوتر': 'fa-desktop', 'تابلت': 'fa-tablet-alt' }, fallback: 'fa-laptop' });
+  renderList('browsersList2', d.browsers, { icons: { Chrome: 'fa-chrome', Firefox: 'fa-firefox', Safari: 'fa-safari', Edge: 'fa-edge', Opera: 'fa-opera' }, fallback: 'fa-globe' });
+  renderList('modelsList2', d.models, { icon: 'fa-microchip' });
+  renderList('countriesList2', d.countries, { icon: 'fa-location-dot' });
+  renderVisits(d.visits);
+}
 
-    function renderList(id, obj, opts) {
-      const el = document.getElementById(id);
-      const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
-      if (!entries.length) { el.innerHTML = '<div class="empty"><i class="fas fa-inbox"></i>لا توجد بيانات بعد</div>'; return; }
-      const max = entries[0][1];
-      el.innerHTML = entries.map(([k, v]) => {
-        const icon = (opts.icons && opts.icons[k]) || opts.icon || opts.fallback || 'fa-tag';
-        const pct = Math.round((v / max) * 100);
-        return `<div class="row">
-          <span class="r-icon"><i class="fas ${icon}"></i></span>
-          <span class="r-name">${k}</span>
-          <div class="r-bar"><div style="width:${pct}%"></div></div>
-          <span class="r-count">${v.toLocaleString('ar-EG')}</span>
-        </div>`;
-      }).join('');
-    }
+function renderChart(days) {
+  const max = Math.max(...days.map(x => x.v), 1);
+  document.getElementById('chart').innerHTML = days.map(x =>
+    '<div class="bar-col" title="' + x.d + '">' +
+      '<div class="bar" style="height:' + Math.max(4, Math.round((x.v / max) * 100)) + '%">' +
+        '<span class="val">' + x.v.toLocaleString('ar-EG') + '</span>' +
+      '</div>' +
+      '<div class="bar-label">' + x.d + '</div>' +
+    '</div>'
+  ).join('');
+}
 
-    function renderVisits(visits) {
-      document.getElementById('visitCount').textContent = `(${visits.length.toLocaleString('ar-EG')} زيارة)`;
-      document.getElementById('visitsEmpty').style.display = visits.length ? 'none' : 'block';
-      const rows = visits.map(v => {
-        const time = new Date(v.t).toLocaleString('ar-EG');
-        const devIcon = v.device === 'موبايل' ? 'fa-mobile-alt' : v.device === 'تابلت' ? 'fa-tablet-alt' : 'fa-desktop';
-        const page = v.page === '/' ? 'الرئيسية' : v.page.includes('movie.html') ? '<i class="fas fa-film" style="color:#e50914;"></i> تفاصيل فيلم' : v.page;
-        const dash = '<span style="color:#444;">—</span>';
-        return `<tr>
-          <td>${time}</td>
-          <td>${page}</td>
-          <td><span class="badge-device"><i class="fas ${devIcon}"></i> ${v.device} (${v.os})</span></td>
-          <td>${v.model || dash}</td>
-          <td>${v.browser}</td>
-          <td>${v.screen || dash}</td>
-          <td>${v.lang || dash}</td>
-          <td>${v.tz || dash}</td>
-          <td>${v.conn ? v.conn.toUpperCase() : dash}</td>
-          <td>${v.country || '<span style="color:#666;">جارٍ التحديد...</span>'}</td>
-          <td>${v.isp || dash}</td>
-          <td><span class="ip">${v.ip}</span></td>
-        </tr>`;
-      }).join('');
-      document.getElementById('visitsBody').innerHTML = rows;
-    }
+function renderList(id, obj, opts) {
+  const el = document.getElementById(id);
+  const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (!entries.length) { el.innerHTML = '<div class="empty"><i class="fas fa-inbox"></i>لا توجد بيانات بعد</div>'; return; }
+  const max = entries[0][1];
+  el.innerHTML = entries.map(function(pair) {
+    const k = pair[0], v = pair[1];
+    const icon = (opts.icons && opts.icons[k]) || opts.icon || opts.fallback || 'fa-tag';
+    const pct = Math.round((v / max) * 100);
+    return '<div class="row">' +
+      '<span class="r-icon"><i class="fas ' + icon + '"></i></span>' +
+      '<span class="r-name">' + k + '</span>' +
+      '<div class="r-bar"><div style="width:' + pct + '%"></div></div>' +
+      '<span class="r-count">' + v.toLocaleString('ar-EG') + '</span>' +
+    '</div>';
+  }).join('');
+}
 
-    document.getElementById('visitSearch').addEventListener('input', function() {
-      if (!currentData) return;
-      const q = this.value.toLowerCase();
-      const filtered = currentData.visits.filter(v =>
-        (v.country || '').toLowerCase().includes(q) || (v.isp || '').toLowerCase().includes(q) ||
-        (v.model || '').toLowerCase().includes(q) || v.ip.includes(q) ||
-        v.browser.toLowerCase().includes(q) || v.device.toLowerCase().includes(q) ||
-        (v.tz || '').toLowerCase().includes(q) || (v.lang || '').toLowerCase().includes(q) ||
-        (v.page || '').toLowerCase().includes(q)
-      );
-      renderVisits(filtered);
-    });
+function renderVisits(visits) {
+  document.getElementById('visitCount').textContent = '(' + visits.length.toLocaleString('ar-EG') + ' زيارة)';
+  document.getElementById('visitsEmpty').style.display = visits.length ? 'none' : 'block';
+  const rows = visits.map(function(v) {
+    const time = new Date(v.t).toLocaleString('ar-EG');
+    const devIcon = v.device === 'موبايل' ? 'fa-mobile-alt' : v.device === 'تابلت' ? 'fa-tablet-alt' : 'fa-desktop';
+    const page = v.page === '/' ? 'الرئيسية' : v.page.includes('movie.html') ? '<i class="fas fa-film" style="color:#e50914;"></i> تفاصيل فيلم' : v.page;
+    const dash = '<span style="color:#444;">—</span>';
+    return '<tr>' +
+      '<td>' + time + '</td>' +
+      '<td>' + page + '</td>' +
+      '<td><span class="badge-device"><i class="fas ' + devIcon + '"></i> ' + v.device + ' (' + v.os + ')</span></td>' +
+      '<td>' + (v.model || dash) + '</td>' +
+      '<td>' + v.browser + '</td>' +
+      '<td>' + (v.screen || dash) + '</td>' +
+      '<td>' + (v.lang || dash) + '</td>' +
+      '<td>' + (v.tz || dash) + '</td>' +
+      '<td>' + (v.conn ? v.conn.toUpperCase() : dash) + '</td>' +
+      '<td>' + (v.country || '<span style="color:#666;">جارٍ التحديد...</span>') + '</td>' +
+      '<td>' + (v.isp || dash) + '</td>' +
+      '<td><span class="ip">' + v.ip + '</span></td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('visitsBody').innerHTML = rows;
+}
 
-    function switchTab(name) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-      document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
-    }
+document.getElementById('visitSearch').addEventListener('input', function() {
+  if (!currentData) return;
+  const q = this.value.toLowerCase();
+  const filtered = currentData.visits.filter(function(v) {
+    return (v.country || '').toLowerCase().includes(q) || (v.isp || '').toLowerCase().includes(q) ||
+      (v.model || '').toLowerCase().includes(q) || v.ip.includes(q) ||
+      v.browser.toLowerCase().includes(q) || v.device.toLowerCase().includes(q) ||
+      (v.tz || '').toLowerCase().includes(q) || (v.lang || '').toLowerCase().includes(q) ||
+      (v.page || '').toLowerCase().includes(q);
+  });
+  renderVisits(filtered);
+});
 
-    async function clearLog() {
-      if (!confirm('متأكد إنك عايز تمسح سجل الزيارات؟')) return;
-      await fetch('/api/admin?action=clear');
-      load();
-    }
-  </script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === name); });
+  document.querySelectorAll('.tab-content').forEach(function(s) { s.classList.toggle('active', s.id === 'tab-' + name); });
+}
+
+async function clearLog() {
+  if (!confirm('متأكد إنك عايز تمسح سجل الزيارات؟')) return;
+  await fetch('/api/admin?action=clear');
+  load();
+}
+</script>
 </body>
 </html>
