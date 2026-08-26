@@ -1,6 +1,6 @@
 /* ===== Ad Blocker: منع الإعلانات والـ popups ===== */
 (function() {
-  // 1) منع كل window.open (الإعلانات بتفتح تاب جديد عن طريق window.open)
+  // 1) منع كل window.open
   window.open = function() { return null; };
 
   // 2) منع الإعلانات عن طريق link clicks
@@ -11,6 +11,37 @@
       e.stopPropagation();
     }
   }, true);
+
+  // 3) MutationObserver: يراقب العناصر الجديدة ويحذف الإعلانات
+  var AD_RE = /ad[s]?[-_]?banner|popup[-_]?overlay|sponsor[-_]?wrap|click[-_]?under|popunder|interstitial[-_]?ad/i;
+  var AD_SCRIPT_RE = /doubleclick|googlesyndication|propellerads|monetag|adsterra|exoclick|hilltopads|popads|popcash|juicyads|trafficjunky|taboola|outbrain|criteo/i;
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      var nodes = mutations[i].addedNodes;
+      for (var j = 0; j < nodes.length; j++) {
+        var n = nodes[j];
+        if (n.nodeType !== 1) continue;
+        var tag = n.tagName;
+        var id = n.id || '';
+        var cls = n.className || '';
+        // شيل divs إعلانية
+        if (tag === 'DIV' && AD_RE.test(id + cls)) { n.remove(); continue; }
+        // شيل iframes إعلانية
+        if (tag === 'IFRAME' && n.src && AD_SCRIPT_RE.test(n.src)) { n.remove(); continue; }
+        // شيل scripts إعلانية
+        if (tag === 'SCRIPT' && n.src && AD_SCRIPT_RE.test(n.src)) { n.remove(); continue; }
+      }
+    }
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // 4) منع navigation أثناء المشاهدة
+  window.addEventListener('beforeunload', function(e) {
+    if (typeof isPlayerOpen !== 'undefined' && isPlayerOpen) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 })();
 /* ===== End Ad Blocker ===== */
 

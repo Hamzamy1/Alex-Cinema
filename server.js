@@ -454,23 +454,20 @@ function buildEmbedSources(mediaType, srcId, season, episode, subUrl) {
   const epPath = isTv ? `/${season}/${episode}` : '';
   const list = [];
   const label = enc('عربي');
-  const proxy = (url) => `/api/proxy-embed?url=${enc(url)}`;
 
   if (subUrl) {
-    // Sources that support injecting OUR subtitle file
-    list.push({ name: 'vidlink', url: proxy(`https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true`) });
+    list.push({ name: 'vidlink', url: `https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true` });
     list.push({ name: 'vidsrc.cc', url: `https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}` });
-    list.push({ name: 'vidsrc.me', url: proxy(isTv
+    list.push({ name: 'vidsrc.me', url: isTv
       ? `https://vidsrc-embed.ru/embed/tv?tmdb=${srcId}&season=${season}&episode=${episode}&sub_url=${enc(subUrl)}&autoplay=1`
-      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1`) });
-    list.push({ name: 'yapgrid', url: proxy(`https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1`) });
+      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1` });
+    list.push({ name: 'yapgrid', url: `https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1` });
   }
 
-  // Fallbacks with built-in provider subs
   list.push(
-    { name: 'vaplayer', url: srcId ? proxy(`https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false`) : null },
-    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? proxy(`https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null },
-    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? proxy(`https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null }
+    { name: 'vaplayer', url: srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null },
+    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? `https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null },
+    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? `https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null }
   );
 
   return list.filter(s => s.url);
