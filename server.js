@@ -454,21 +454,21 @@ function buildEmbedSources(mediaType, srcId, season, episode, subUrl) {
   const epPath = isTv ? `/${season}/${episode}` : '';
   const list = [];
   const label = enc('عربي');
-  const p = (url) => `/api/proxy-embed?url=${enc(url)}`;
+  const px = (url) => `/api/proxy-embed?url=${enc(url)}`;
 
   if (subUrl) {
-    list.push({ name: 'vidlink', url: p(`https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true`) });
-    list.push({ name: 'vidsrc.cc', url: p(`https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}`) });
-    list.push({ name: 'vidsrc.me', url: p(isTv
+    list.push({ name: 'vidlink', url: px(`https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true`) });
+    list.push({ name: 'vidsrc.cc', url: `https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}` });
+    list.push({ name: 'vidsrc.me', url: px(isTv
       ? `https://vidsrc-embed.ru/embed/tv?tmdb=${srcId}&season=${season}&episode=${episode}&sub_url=${enc(subUrl)}&autoplay=1`
       : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1`) });
-    list.push({ name: 'yapgrid', url: p(`https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1`) });
+    list.push({ name: 'yapgrid', url: px(`https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1`) });
   }
 
   list.push(
-    { name: 'vaplayer', url: srcId ? p(`https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false`) : null },
-    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? p(`https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null },
-    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? p(`https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null }
+    { name: 'vaplayer', url: srcId ? px(`https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false`) : null },
+    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? px(`https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null },
+    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? px(`https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null }
   );
 
   return list.filter(s => s.url);
@@ -732,25 +732,12 @@ const server = http.createServer(async (req, res) => {
         clearTimeout(timer);
         const contentType = response.headers.get('content-type') || 'text/html';
         let body = await response.text();
-        if (contentType.includes('text/html')) {
-          body = stripAds(body);
-          // Inject <base> so relative URLs (JS fetch, CSS, etc.) resolve to original provider
-          const baseTag = `<base href="${origin}/">`;
-          if (/<head[\s>]/i.test(body)) {
-            body = body.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
-          } else if (/<html[\s>]/i.test(body)) {
-            body = body.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}</head>`);
-          } else {
-            body = baseTag + body;
-          }
-          // Inject popup blocker inside the iframe
-          const blocker = '<script>(()=>{window.open=function(){};document.addEventListener("click",e=>{const a=e.target.closest("a[href]");if(a&&a.target==="_blank"){e.preventDefault();a.target="_self";}},true);})();</script>';
-          body = body.replace(/<\/head>/i, `${blocker}</head>`);
-        }
+        if (contentType.includes('text/html')) body = stripAds(body);
         res.writeHead(200, {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
-          'X-Content-Type-Options': 'nosniff'
+          'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "sandbox allow-scripts allow-same-origin allow-forms allow-presentation"
         });
         res.end(body);
       } catch (e) {
