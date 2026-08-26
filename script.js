@@ -3,28 +3,10 @@
   // 1) منع كل window.open (الإعلانات بتفتح تاب جديد عن طريق window.open)
   window.open = function() { return null; };
 
-  // 2) منعتنقل الصفحة الرئيسية من أي iframe إعلاني
-  window.addEventListener('beforeunload', function(e) {
-    if (isPlayerOpen) return;
-    e.preventDefault();
-    e.returnValue = '';
-  });
-
-  // 3) مراقبةpostMessage من الـ iframes ومنع أي محاولة redirect
-  window.addEventListener('message', function(e) {
-    if (!e.source || e.source === window) return;
-    try {
-      const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      if (d && (d.type === 'redirect' || d.type === 'navigate' || d.open || d.popup)) {
-        e.stopImmediatePropagation();
-      }
-    } catch {}
-  }, true);
-
-  // 4) منع right-click ads
+  // 2) منع الإعلانات عن طريق link clicks
   document.addEventListener('click', function(e) {
     const t = e.target.closest('a[href]');
-    if (t && t.href && /doubleclick|googlesyndication|adsterra|propeller|monetag|exoclick/i.test(t.href)) {
+    if (t && t.href && /doubleclick|googlesyndication|adsterra|propeller|monetag|exoclick|taboola|outbrain/i.test(t.href)) {
       e.preventDefault();
       e.stopPropagation();
     }

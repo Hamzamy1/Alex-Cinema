@@ -185,25 +185,6 @@ function stripAds(html) {
   return c;
 }
 
-function proxyCleanEmbed(targetUrl) {
-  const decoded = decodeURIComponent(targetUrl);
-  const base = new URL(decoded).origin;
-  return fetch(decoded, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': base + '/' },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(12000)
-  }).then(async r => {
-    const ct = r.headers.get('content-type') || 'text/html';
-    let body = await r.text();
-    if (ct.includes('text/html')) {
-      body = stripAds(body);
-      body = body.replace(/(src|href)="(\/[^"]+)"/g, '$1="' + base + '$2"');
-      body = body.replace(/(src|href)='(\/[^']+)'/g, "$1='" + base + "$2'");
-    }
-    return { ct, body };
-  });
-}
-
 /* ================= End Ad-blocking Proxy ================= */
 
 /* ================= External Subtitles Engine ================= */
@@ -454,23 +435,22 @@ function buildEmbedSources(mediaType, srcId, season, episode, subUrl) {
   const epPath = isTv ? `/${season}/${episode}` : '';
   const list = [];
   const label = enc('عربي');
-  const clean = (url) => `/api/proxy-clean?url=${enc(url)}`;
 
   if (subUrl) {
     // Sources that support injecting OUR subtitle file
-    list.push({ name: 'vidlink', url: clean(`https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true`) });
-    list.push({ name: 'vidsrc.cc', url: clean(`https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}`) });
-    list.push({ name: 'vidsrc.me', url: clean(isTv
+    list.push({ name: 'vidlink', url: `https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true` });
+    list.push({ name: 'vidsrc.cc', url: `https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}` });
+    list.push({ name: 'vidsrc.me', url: isTv
       ? `https://vidsrc-embed.ru/embed/tv?tmdb=${srcId}&season=${season}&episode=${episode}&sub_url=${enc(subUrl)}&autoplay=1`
-      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1`) });
-    list.push({ name: 'yapgrid', url: clean(`https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1`) });
+      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1` });
+    list.push({ name: 'yapgrid', url: `https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1` });
   }
 
   // Fallbacks with built-in provider subs
   list.push(
-    { name: 'vaplayer', url: srcId ? clean(`https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false`) : null },
-    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? clean(`https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null },
-    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? clean(`https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null }
+    { name: 'vaplayer', url: srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null },
+    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? `https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null },
+    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? `https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null }
   );
 
   return list.filter(s => s.url);
@@ -727,25 +707,6 @@ const server = http.createServer(async (req, res) => {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
           'X-Content-Type-Options': 'nosniff'
-        });
-        res.end(body);
-      } catch (e) {
-        sendJson(res, { error: 'proxy failed' }, 502);
-      }
-      return;
-    }
-
-    // Clean proxy: strips ads + adds CSP sandbox header (prevents popups/redirects inside iframe)
-    if (p === '/api/proxy-clean') {
-      try {
-        const targetUrl = url.searchParams.get('url');
-        if (!targetUrl) { sendJson(res, { error: 'no url' }, 400); return; }
-        const { ct, body } = await proxyCleanEmbed(targetUrl);
-        res.writeHead(200, {
-          'Content-Type': ct,
-          'Access-Control-Allow-Origin': '*',
-          'X-Content-Type-Options': 'nosniff',
-          'Content-Security-Policy': "sandbox allow-scripts allow-same-origin allow-forms allow-presentation; script-src 'unsafe-inline' 'unsafe-eval' https: http:; style-src 'unsafe-inline' https: http:; img-src * data:; media-src *; connect-src *;"
         });
         res.end(body);
       } catch (e) {
