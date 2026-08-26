@@ -175,6 +175,18 @@ function getClientIp(req) {
   return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '0.0.0.0';
 }
 
+/* ================= Ad-blocking Proxy ================= */
+function stripAds(html) {
+  let c = html;
+  c = c.replace(/<script[^>]*src="[^"]*(?:googlesyndication|doubleclick|googleadservices|adservice|adnxs|taboola|outbrain|criteo|pubmatic|openx|rubiconproject|casalemedia|sharethrough|seedtag|propellerads|monetag|adsterra|hilltopads|exoclick|juicyads|trafficjunky)[^"]*"[^>]*>[\s\S]*?<\/script>/gi, '');
+  c = c.replace(/<script[^>]*>[\s\S]*?(?:window\.open\s*\(|window\.location\s*=|location\.href\s*=|location\.replace\s*\(|document\.location\s*=)[\s\S]*?<\/script>/gi, '');
+  c = c.replace(/<iframe[^>]*src="[^"]*(?:googlesyndication|doubleclick|googleadservices|adservice|adnxs|taboola|outbrain|criteo|pubmatic|openx|propellerads|monetag|adsterra|hilltopads)[^"]*"[\s\S]*?<\/iframe>/gi, '');
+  c = c.replace(/on(click|mousedown|mouseup|touchstart)\s*=\s*["'][^"']*(?:window\.open|location|popup)[^"']*["']/gi, '');
+  return c;
+}
+
+/* ================= End Ad-blocking Proxy ================= */
+
 /* ================= External Subtitles Engine ================= */
 const SUBS_DIR = path.join(__dirname, 'subs-cache');
 try { fs.mkdirSync(SUBS_DIR, { recursive: true }); } catch {}
@@ -689,7 +701,8 @@ const server = http.createServer(async (req, res) => {
           headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://vidsrc.to/' }
         });
         const contentType = response.headers.get('content-type') || 'text/html';
-        const body = await response.text();
+        let body = await response.text();
+        if (contentType.includes('text/html')) body = stripAds(body);
         res.writeHead(200, {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
@@ -890,7 +903,7 @@ const server = http.createServer(async (req, res) => {
     const ext = path.extname(filePath);
     fs.readFile(fullPath, (err, data) => {
       if (err) { res.writeHead(404); res.end('File not found'); return; }
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-store', 'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': "frame-ancestors 'self'" });
       res.end(data);
     });
   } catch (e) {

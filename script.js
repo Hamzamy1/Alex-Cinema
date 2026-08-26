@@ -655,8 +655,10 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
-  // ملاحظة: مش بنستخدم sandbox هنا لأن بعض المشغلات (مثل vidsrc) بتفضل التشغيل جواه
-  // والأمان هنا إن السيرفر بيفضل المصادر النظيفة بس (بتتقال أدناه في server.js)
+  // حماية من الإعلانات: sandbox يمنع الـ popups والتنقل غير المصرح به
+  // allow-scripts + allow-same-origin كافي للتشغيل العادي
+  // من غير allow-popups / allow-top-navigation → مفيش إعلانات هتتفتح
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
   container.appendChild(iframe);
 
   let loaded = false;
@@ -696,6 +698,7 @@ function switchServer(i) {
     fresh.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
     fresh.allowFullscreen = true;
     fresh.setAttribute('loading', 'lazy');
+    fresh.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
     oldFrame.replaceWith(fresh);
     let done = false;
     fresh.onload = () => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } };
