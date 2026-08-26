@@ -704,6 +704,19 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.setAttribute('loading', 'lazy');
   container.appendChild(iframe);
 
+  // Anti click-under: نحط overlay فوق المشغل يلقط أول click كان هروح للإعلان
+  const shield = document.createElement('div');
+  shield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999999;cursor:pointer;background:transparent;';
+  shield.addEventListener('click', function handler(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    shield.remove();
+    // بعد ما شلنا الـ overlay، نambsss click على الـ iframe مباشرة
+    try { iframe.contentWindow.postMessage({ action: 'click' }, '*'); } catch {}
+  }, true);
+  container.style.position = container.style.position || 'relative';
+  container.appendChild(shield);
+
   let loaded = false;
   const show = () => { if (!loaded) { loaded = true; if (loading) loading.classList.remove('active'); if (controls) controls.style.opacity = '1'; } };
   iframe.onload = show;
@@ -742,6 +755,17 @@ function switchServer(i) {
     fresh.allowFullscreen = true;
     fresh.setAttribute('loading', 'lazy');
     oldFrame.replaceWith(fresh);
+    // Anti click-under shield للسيرفر الجديد
+    const oldShield = container.querySelector('div[style*="z-index:999999"]');
+    if (oldShield) oldShield.remove();
+    const newShield = document.createElement('div');
+    newShield.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:999999;cursor:pointer;background:transparent;';
+    newShield.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      newShield.remove();
+    }, true);
+    container.appendChild(newShield);
     let done = false;
     fresh.onload = () => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } };
     setTimeout(() => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } }, 8000);
