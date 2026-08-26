@@ -176,15 +176,34 @@ function getClientIp(req) {
 }
 
 /* ================= Ad-blocking Proxy ================= */
+const AD_DOMAINS = 'googlesyndication|doubleclick|googleadservices|adservice|adnxs|taboola|outbrain|criteo|pubmatic|openx|rubiconproject|casalemedia|sharethrough|seedtag|propellerads|monetag|adsterra|hilltopads|exoclick|juicyads|trafficjunky|popads|popcash|bcvc|venotro|brazzers|trafficstars|adskeeper|mgid|evadav|galaksion|myadx|armorpaint|ad-maven|adbid|adcrowd|bidvertiser|chitika|kontera|intellitext|infolinks|commerce|AmazonAds|zynga|adcolony|vungle|inmobi|startapp|appbrain|applovin|unity3dads|facebook.*ads';
+
 function stripAds(html) {
   let c = html;
-  c = c.replace(/<script[^>]*src="[^"]*(?:googlesyndication|doubleclick|googleadservices|adservice|adnxs|taboola|outbrain|criteo|pubmatic|openx|rubiconproject|casalemedia|sharethrough|seedtag|propellerads|monetag|adsterra|hilltopads|exoclick|juicyads|trafficjunky)[^"]*"[^>]*>[\s\S]*?<\/script>/gi, '');
-  c = c.replace(/<script[^>]*>[\s\S]*?(?:window\.open\s*\(|window\.location\s*=|location\.href\s*=|location\.replace\s*\(|document\.location\s*=)[\s\S]*?<\/script>/gi, '');
-  c = c.replace(/<iframe[^>]*src="[^"]*(?:googlesyndication|doubleclick|googleadservices|adservice|adnxs|taboola|outbrain|criteo|pubmatic|openx|propellerads|monetag|adsterra|hilltopads)[^"]*"[\s\S]*?<\/iframe>/gi, '');
-  c = c.replace(/on(click|mousedown|mouseup|touchstart)\s*=\s*["'][^"']*(?:window\.open|location|popup)[^"']*["']/gi, '');
+
+  // 1) شيل script tags بتاعت إعلانات (external src)
+  c = c.replace(new RegExp(`<script[^>]*src="[^"]*(?:${AD_DOMAINS})[^"]*"[^>]*>[\\s\\S]*?<\\/script>`, 'gi'), '');
+
+  // 2) شيل inline scripts فيها window.open أو redirects
+  c = c.replace(/<script[^>]*>[\s\S]*?(?:window\.open\s*\(|window\.location\s*[=.]|location\.href\s*[=.]|location\.replace\s*\(|document\.location\s*[=.]|setTimeout\s*\(\s*["']?\s*function\s*\(\)\s*\{[^}]*(?:location|open|redirect))[\s\S]*?<\/script>/gi, '');
+
+  // 3) شيل scripts فيها eval أو Function() (الإعلانات المشفرة)
+  c = c.replace(/<script[^>]*>[\s\S]*?(?:\beval\s*\(|new\s+Function\s*\()(\s*["'][^"']*atob|[\s\S]{0,500})[\s\S]*?<\/script>/gi, '');
+
+  // 4) شيل iframes إعلانية
+  c = c.replace(new RegExp(`<iframe[^>]*src="[^"]*(?:${AD_DOMAINS})[^"]*"[^>]*>[\\s\\S]*?<\\/iframe>`, 'gi'), '');
+
+  // 5) شيل onclick handlers فيها redirect
+  c = c.replace(/\bon(click|mousedown|mouseup|touchstart)\s*=\s*["'][^"']*(?:window\.open|location|redirect|popup)[^"']*["']/gi, '');
+
+  // 6) شيل divs IDs بتاعت إعلانات
+  c = c.replace(/<div[^>]*(?:id|class)\s*=\s*["'][^"']*(?:ad[s]?[-_]|banner[-_]|popup[-_]|overlay[-_]|sponsor)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
+
+  // 7) شيل meta refresh
+  c = c.replace(/<meta[^>]*http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '');
+
   return c;
 }
-
 /* ================= End Ad-blocking Proxy ================= */
 
 /* ================= External Subtitles Engine ================= */
@@ -435,22 +454,23 @@ function buildEmbedSources(mediaType, srcId, season, episode, subUrl) {
   const epPath = isTv ? `/${season}/${episode}` : '';
   const list = [];
   const label = enc('عربي');
+  const proxy = (url) => `/api/proxy-embed?url=${enc(url)}`;
 
   if (subUrl) {
     // Sources that support injecting OUR subtitle file
-    list.push({ name: 'vidlink', url: `https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true` });
+    list.push({ name: 'vidlink', url: proxy(`https://vidlink.pro/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_file=${enc(subUrl)}&sub_label=${label}&autoplay=true`) });
     list.push({ name: 'vidsrc.cc', url: `https://vidsrc.cc/v2/embed/${mediaType}/${srcId}${epPath}?autoplay=1&sub.file=${enc(subUrl)}&sub.label=${label}` });
-    list.push({ name: 'vidsrc.me', url: isTv
+    list.push({ name: 'vidsrc.me', url: proxy(isTv
       ? `https://vidsrc-embed.ru/embed/tv?tmdb=${srcId}&season=${season}&episode=${episode}&sub_url=${enc(subUrl)}&autoplay=1`
-      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1` });
-    list.push({ name: 'yapgrid', url: `https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1` });
+      : `https://vidsrc-embed.ru/embed/movie?tmdb=${srcId}&sub_url=${enc(subUrl)}&autoplay=1`) });
+    list.push({ name: 'yapgrid', url: proxy(`https://yapgrid.com/embed/${mediaType}/${srcId}${isTv ? `/${season}/${episode}` : ''}?sub_url=${enc(subUrl)}&sub_lang=ar&sub_label=${label}&autoplay=1`) });
   }
 
   // Fallbacks with built-in provider subs
   list.push(
-    { name: 'vaplayer', url: srcId ? `https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false` : null },
-    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? `https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null },
-    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? `https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1` : null }
+    { name: 'vaplayer', url: srcId ? proxy(`https://vaplayer.ru/embed/${mediaType}/${srcId}${epPath}?primaryColor=%23e50914&ds_lang=ar&autoplay=1&showTitle=false`) : null },
+    { name: 'vidsrc.wiki', url: /^\d+$/.test(srcId) ? proxy(`https://vidsrc.wiki/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null },
+    { name: 'vidsrc.sbs', url: /^\d+$/.test(srcId) ? proxy(`https://vidsrc.sbs/embed/${mediaType}/${srcId}${epPath}?sub=ar&controls=0&autoplay=1`) : null }
   );
 
   return list.filter(s => s.url);
@@ -692,17 +712,43 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Proxy for masking embed URLs
+    // Proxy for masking embed URLs + stripping ads
     if (p === '/api/proxy-embed') {
       try {
         const targetUrl = url.searchParams.get('url');
         if (!targetUrl) { sendJson(res, { error: 'no url' }, 400); return; }
-        const response = await fetch(decodeURIComponent(targetUrl), {
-          headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://vidsrc.to/' }
+        const decoded = decodeURIComponent(targetUrl);
+        const origin = new URL(decoded).origin;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        const response = await fetch(decoded, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Referer': origin + '/',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+          redirect: 'follow',
+          signal: controller.signal
         });
+        clearTimeout(timer);
         const contentType = response.headers.get('content-type') || 'text/html';
         let body = await response.text();
-        if (contentType.includes('text/html')) body = stripAds(body);
+        if (contentType.includes('text/html')) {
+          body = stripAds(body);
+          // Inject <base> so relative URLs (JS fetch, CSS, etc.) resolve to original provider
+          const baseTag = `<base href="${origin}/">`;
+          if (/<head[\s>]/i.test(body)) {
+            body = body.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
+          } else if (/<html[\s>]/i.test(body)) {
+            body = body.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}</head>`);
+          } else {
+            body = baseTag + body;
+          }
+          // Inject popup blocker inside the iframe
+          const blocker = '<script>(()=>{window.open=function(){};document.addEventListener("click",e=>{const a=e.target.closest("a[href]");if(a&&a.target==="_blank"){e.preventDefault();a.target="_self";}},true);})();</script>';
+          body = body.replace(/<\/head>/i, `${blocker}</head>`);
+        }
         res.writeHead(200, {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
@@ -710,6 +756,7 @@ const server = http.createServer(async (req, res) => {
         });
         res.end(body);
       } catch (e) {
+        console.error('proxy-embed error:', e.message);
         sendJson(res, { error: 'proxy failed' }, 502);
       }
       return;
