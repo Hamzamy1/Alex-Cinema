@@ -1,3 +1,37 @@
+/* ===== Ad Blocker: منع الإعلانات والـ popups ===== */
+(function() {
+  // 1) منع كل window.open (الإعلانات بتفتح تاب جديد عن طريق window.open)
+  window.open = function() { return null; };
+
+  // 2) منعتنقل الصفحة الرئيسية من أي iframe إعلاني
+  window.addEventListener('beforeunload', function(e) {
+    if (isPlayerOpen) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  // 3) مراقبةpostMessage من الـ iframes ومنع أي محاولة redirect
+  window.addEventListener('message', function(e) {
+    if (!e.source || e.source === window) return;
+    try {
+      const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (d && (d.type === 'redirect' || d.type === 'navigate' || d.open || d.popup)) {
+        e.stopImmediatePropagation();
+      }
+    } catch {}
+  }, true);
+
+  // 4) منع right-click ads
+  document.addEventListener('click', function(e) {
+    const t = e.target.closest('a[href]');
+    if (t && t.href && /doubleclick|googlesyndication|adsterra|propeller|monetag|exoclick/i.test(t.href)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+})();
+/* ===== End Ad Blocker ===== */
+
 let currentPage = 1;
 let currentQuery = '';
 let currentGenre = '';
@@ -655,10 +689,6 @@ function loadEmbedPlayer(embedUrl, container, loading, controls) {
   iframe.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
   iframe.allowFullscreen = true;
   iframe.setAttribute('loading', 'lazy');
-  // حماية من الإعلانات: sandbox يمنع الـ popups والتنقل غير المصرح به
-  // allow-scripts + allow-same-origin كافي للتشغيل العادي
-  // من غير allow-popups / allow-top-navigation → مفيش إعلانات هتتفتح
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
   container.appendChild(iframe);
 
   let loaded = false;
@@ -698,7 +728,6 @@ function switchServer(i) {
     fresh.allow = 'autoplay;fullscreen;picture-in-picture;encrypted-media';
     fresh.allowFullscreen = true;
     fresh.setAttribute('loading', 'lazy');
-    fresh.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
     oldFrame.replaceWith(fresh);
     let done = false;
     fresh.onload = () => { if (!done) { done = true; if (loading) loading.classList.remove('active'); } };
