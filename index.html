@@ -140,5 +140,10 @@
   <button class="to-top" id="toTopBtn" aria-label="العودة لأعلى"><i class="fas fa-chevron-up"></i></button>
 
   <script src="script.js?v=15"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>

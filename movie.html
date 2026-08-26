@@ -221,5 +221,10 @@
   </footer>
 
   <script src="script.js?v=15"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>
